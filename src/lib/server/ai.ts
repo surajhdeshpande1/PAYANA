@@ -28,6 +28,21 @@ const GROQ_VISION = process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-1
 const GROQ_TEXT = process.env.GROQ_TEXT_MODEL || "llama-3.3-70b-versatile";
 const GROQ_STT = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
 
+const PLACE_NAMES =
+  "Badami, Aihole, Pattadakal, Mahakuta, Banashankari, Kudalasangama, Bagalkote, Ilkal, Guledgudda, Amingad, Almatti, Siddanakolla, Hunagund, Jamkhandi, Mudhol, Chalukya, Durga temple, Agastya lake, Bhutanatha, Virupaksha, Ravanaphadi, Meguti";
+
+/** Language of a text by its script (used to answer a spoken question in the language spoken). */
+function scriptLang(text: string): Lang | null {
+  const kn = (text.match(/[\u0C80-\u0CFF]/g) || []).length;
+  const hi = (text.match(/[\u0900-\u097F]/g) || []).length;
+  const en = (text.match(/[A-Za-z]/g) || []).length;
+  const total = kn + hi + en;
+  if (!total) return null;
+  if (kn / total > 0.3) return "kn";
+  if (hi / total > 0.3) return "hi";
+  return "en";
+}
+
 export const aiStatus = () => ({ gemini: Boolean(GEMINI_KEY), groq: Boolean(GROQ_KEY) });
 
 /* ---------------- Grounding knowledge base ---------------- */
@@ -88,7 +103,7 @@ function systemPrompt(lang: Lang, kb: string = knowledgeBase()) {
 
 RULES
 1. For facts about places, history, dates, rulers, timings and fees use ONLY the KNOWLEDGE BASE and LIVE CONTEXT. If something is not covered, say you don't have verified information on that and suggest asking at the site or calling the tourist helpline 1363. Never invent dates, names, numbers or legends.
-2. Always reply in ${L} (${script}) — natural and fluent — even if the visitor writes or speaks another language. Keep place names recognisable.
+2. Reply in ${L} (${script}) — natural and fluent — even if the visitor writes in another language. Exception: a SPOKEN question is answered in the language the visitor actually spoke (Kannada → Kannada script, English → English, Hindi → Devanagari). Keep place names recognisable.
 3. Be concise and easy to listen to: 50–110 words unless the visitor asks for more detail. No markdown headings, tables or emojis. Short sentences that sound good read aloud.
 4. When helpful, suggest a less-crowded hidden gem nearby or a local artisan/food/stay from the list — this spreads footfall and supports local families. Use the live crowd snapshot for crowd questions.
 5. In an emergency, tell them to call 112 immediately.
@@ -115,7 +130,9 @@ TASK: Identify which knowledge-base site this photo most likely shows, using eac
   }
   if (req.mode === "voice") {
     return `${ctx}
-TASK: The visitor asked a question by voice (audio attached; it may be Kannada, Hindi or English). Put an exact transcript in "transcript" (in the language and script spoken), then answer it in "answer" in ${L}.`;
+TASK: The visitor asked a question by voice (audio attached). They may speak Kannada, English or Hindi, or mix them (for example Kannada with English words) — listen carefully to the whole clip. Place names you may hear: ${PLACE_NAMES}.
+1. "transcript": exactly what they said, in the script of the language spoken (Kannada in Kannada script, Hindi in Devanagari, English in English). Spell place names correctly. Do not translate.
+2. "answer": answer that question in the SAME language they spoke (Kannada question → Kannada answer; English → English; Hindi → Hindi). If the audio is silent or unclear, say briefly (in ${L}) that you couldn't hear it and ask them to try again.`;
   }
   return `${ctx}\nVisitor: ${lastUser}`;
 }
@@ -278,12 +295,15 @@ async function geminiModels(): Promise<string[]> {
 
 /* ---------------- Groq (fallback) ---------------- */
 
-async function groqTranscribe(audio: { data: string; mime: string }) {
+async function whisper(audio: { data: string; mime: string }, opts: { language?: string; prompt: string }) {
   const form = new FormData();
   const bytes = Buffer.from(audio.data, "base64");
   form.append("file", new Blob([bytes], { type: audio.mime }), "question.wav");
   form.append("model", (await groqModels()).stt);
-  form.append("response_format", "json");
+  form.append("response_format", "verbose_json");
+  form.append("temperature", "0");
+  form.append("prompt", opts.prompt);
+  if (opts.language) form.append("language", opts.language);
   const res = await withTimeout(25000, (signal) =>
     fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
@@ -294,14 +314,37 @@ async function groqTranscribe(audio: { data: string; mime: string }) {
   );
   if (!res.ok) throw new Error(`groq stt ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const j = await res.json();
-  return String(j.text || "").trim();
+  return { text: String(j.text || "").trim(), language: String(j.language || "").toLowerCase() };
+}
+
+/**
+ * Speech → text. Whisper auto-detects the language; if it hears something other
+ * than Kannada/English/Hindi (Kannada is often mistaken for Telugu or Tamil),
+ * transcribe again with the language forced.
+ */
+async function groqTranscribe(audio: { data: string; mime: string }, lang: Lang) {
+  const first = await whisper(audio, { prompt: `Tourist question about ${PLACE_NAMES}.` });
+  const ok = ["english", "en", "kannada", "kn", "hindi", "hi"];
+  if (!first.text || ok.includes(first.language)) return first.text;
+  const hindiLike = ["urdu", "ur", "marathi", "mr", "nepali", "ne", "punjabi", "pa"];
+  const forced = hindiLike.includes(first.language) && lang === "hi" ? "hi" : "kn";
+  const prompts: Record<string, string> = {
+    kn: "ಬಾದಾಮಿ, ಐಹೊಳೆ, ಪಟ್ಟದಕಲ್ಲು, ಮಹಾಕೂಟ, ಬನಶಂಕರಿ, ಕೂಡಲಸಂಗಮ, ಬಾಗಲಕೋಟೆ, ಇಳಕಲ್ ಬಗ್ಗೆ ಪ್ರಶ್ನೆ.",
+    hi: "बादामी, ऐहोले, पट्टदकल, बागलकोट के बारे में सवाल।",
+  };
+  try {
+    const again = await whisper(audio, { language: forced, prompt: prompts[forced] });
+    return again.text || first.text;
+  } catch {
+    return first.text;
+  }
 }
 
 async function callGroq(req: GuideRequest): Promise<GuideResponse> {
   let transcript: string | undefined;
   const msgs = [...req.messages];
   if (req.audio) {
-    transcript = await groqTranscribe(req.audio);
+    transcript = await groqTranscribe(req.audio, req.lang);
     msgs.push({ role: "user", text: transcript });
   }
   const lastUser = msgs.filter((m) => m.role === "user").at(-1)?.text || "";
@@ -313,6 +356,7 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
         { type: "image_url", image_url: { url: `data:${req.image.mime};base64,${req.image.data}` } },
       ]
     : task;
+  const replyLang = (transcript && scriptLang(transcript)) || req.lang;
   const available = await groqModels();
   const candidates = req.image ? (available.vision ? [available.vision] : []) : available.texts;
   if (!candidates.length) throw new Error("groq: no suitable model available");
@@ -323,7 +367,7 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
       temperature: 0.4,
       max_tokens: 1400,
       messages: [
-        { role: "system", content: systemPrompt(req.lang, compactKnowledgeBase(lastUser, req.siteId)) },
+        { role: "system", content: systemPrompt(replyLang, compactKnowledgeBase(lastUser, req.siteId)) },
         ...history,
         { role: "user", content },
       ],
@@ -464,40 +508,52 @@ function pcmToWav(pcm: Buffer, rate = 24000) {
   return Buffer.concat([header, pcm]);
 }
 
-export async function synthesize(text: string, lang: Lang): Promise<Buffer | null> {
-  if (!GEMINI_KEY) return null;
+const TTS_VOICES = [...new Set([process.env.GEMINI_TTS_VOICE || "Sulafat", "Kore"])];
+
+/** Returns WAV audio, or the HTTP status to report (429 = rate-limited, 503 = unavailable). */
+export async function synthesize(text: string, lang: Lang): Promise<Buffer | number> {
+  if (!GEMINI_KEY) return 503;
   const key = `${lang}:${text}`;
   const hit = ttsCache.get(key);
   if (hit) return hit;
+  let limited = false;
   for (const model of await ttsModels()) {
-    try {
-      const res = await withTimeout(30000, (signal) =>
-        fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method: "POST",
-          signal,
-          headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
-          body: JSON.stringify({
-            // Send only the text: TTS models may read any instruction prefix aloud.
-            contents: [{ parts: [{ text }] }],
-            generationConfig: {
-              responseModalities: ["AUDIO"],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
-            },
+    for (const voiceName of TTS_VOICES) {
+      try {
+        const res = await withTimeout(30000, (signal) =>
+          fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: "POST",
+            signal,
+            headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
+            body: JSON.stringify({
+              // Send only the text: TTS models may read any instruction prefix aloud.
+              contents: [{ parts: [{ text }] }],
+              generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
+              },
+            }),
           }),
-        }),
-      );
-      if (!res.ok) continue;
-      const j = await res.json();
-      const part = j.candidates?.[0]?.content?.parts?.find((p: { inlineData?: unknown }) => p.inlineData);
-      if (!part) continue;
-      const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType || "")?.[1] || 24000);
-      const wav = pcmToWav(Buffer.from(part.inlineData.data, "base64"), rate);
-      if (ttsCache.size > 50) ttsCache.clear();
-      ttsCache.set(key, wav);
-      return wav;
-    } catch {}
+        );
+        if (res.status === 429) limited = true;
+        if (!res.ok) {
+          if (res.status === 400) continue; // e.g. voice not offered by this model → next voice
+          break; // rate-limited / missing model → next model
+        }
+        const j = await res.json();
+        const part = j.candidates?.[0]?.content?.parts?.find((p: { inlineData?: unknown }) => p.inlineData);
+        if (!part) continue;
+        const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType || "")?.[1] || 24000);
+        const wav = pcmToWav(Buffer.from(part.inlineData.data, "base64"), rate);
+        if (ttsCache.size > 80) ttsCache.clear();
+        ttsCache.set(key, wav);
+        return wav;
+      } catch {
+        break;
+      }
+    }
   }
-  return null;
+  return limited ? 429 : 503;
 }
 
 /** Which models this deployment will use (for /api/health?models=1). */

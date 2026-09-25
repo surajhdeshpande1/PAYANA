@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Loader2, Pause, Play, X } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { pauseSpeaking, resumeSpeaking, stopSpeaking, useNowPlaying } from "@/lib/tts";
+import { cycleSpeed, pauseSpeaking, resumeSpeaking, stopSpeaking, useNowPlaying, useVoiceSettings } from "@/lib/tts";
 
 /**
  * Floating voice player shown whenever something is being read aloud.
@@ -11,6 +11,7 @@ import { pauseSpeaking, resumeSpeaking, stopSpeaking, useNowPlaying } from "@/li
  */
 export default function MiniPlayer() {
   const np = useNowPlaying();
+  const { speed } = useVoiceSettings();
   const router = useRouter();
   const { t } = useApp();
   if (!np) return null;
@@ -29,7 +30,7 @@ export default function MiniPlayer() {
         onClick={open}
         onKeyDown={(e) => e.key === "Enter" && open()}
         aria-label={np.title ? `${t("player.nowPlaying")}: ${np.title}` : t("player.nowPlaying")}
-        className="fade-up pointer-events-auto flex cursor-pointer items-center gap-3 rounded-full border border-white/15 bg-maroon-900/95 py-2 pl-3 pr-2 shadow-[0_14px_34px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl"
+        className="fade-up pointer-events-auto flex cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-maroon-900/95 py-2 pl-2.5 pr-2 shadow-[0_14px_34px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-gold">
           {loading ? (
@@ -50,6 +51,16 @@ export default function MiniPlayer() {
           </span>
           <span className="block truncate text-sm font-semibold text-white">{np.title || t("guide.title")}</span>
         </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            cycleSpeed();
+          }}
+          aria-label={`${t("player.speed")} ${speed}×`}
+          className="h-10 min-w-10 shrink-0 rounded-full border border-white/20 px-2 text-xs font-bold tabular-nums text-gold-light"
+        >
+          {speed}×
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -41,7 +41,7 @@ export class VoiceRecorder {
 
   async start() {
     this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
     });
     const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/aac", ""];
     const mimeType = types.find((t) => !t || MediaRecorder.isTypeSupported(t)) || "";
@@ -88,7 +88,34 @@ async function toWav16k(blob: Blob): Promise<Blob> {
   src.connect(off.destination);
   src.start();
   const rendered = await off.startRendering();
-  return encodeWav(rendered.getChannelData(0), rate);
+  return encodeWav(tidy(rendered.getChannelData(0), rate), rate);
+}
+
+/**
+ * Helps speech recognition with quiet phones and noisy sites: trims leading and
+ * trailing silence (keeping a short margin) and normalises the volume.
+ */
+function tidy(samples: Float32Array, rate: number): Float32Array {
+  const win = Math.round(rate * 0.02);
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]));
+  if (peak < 0.003) return samples; // silence: leave it, the guide will ask to try again
+  const threshold = Math.max(0.01, peak * 0.06);
+  const loud = (i: number) => {
+    let sum = 0;
+    const end = Math.min(samples.length, i + win);
+    for (let j = i; j < end; j++) sum += samples[j] * samples[j];
+    return Math.sqrt(sum / Math.max(1, end - i)) > threshold;
+  };
+  let start = 0;
+  while (start < samples.length && !loud(start)) start += win;
+  let end = samples.length;
+  while (end > start && !loud(Math.max(0, end - win))) end -= win;
+  const margin = Math.round(rate * 0.3);
+  const out = samples.slice(Math.max(0, start - margin), Math.min(samples.length, end + margin));
+  const gain = Math.min(8, 0.9 / peak);
+  if (gain > 1.05) for (let i = 0; i < out.length; i++) out[i] *= gain;
+  return out.length > rate * 0.3 ? out : samples;
 }
 
 export function encodeWav(samples: Float32Array, rate: number): Blob {

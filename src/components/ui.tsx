@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Accessibility,
+  AudioLines,
   ChevronLeft,
   Gem,
   Landmark,
@@ -12,7 +14,6 @@ import {
   Menu,
   QrCode,
   ShieldAlert,
-  LogOut,
   Stamp,
   Store,
   Volume2,
@@ -21,10 +22,9 @@ import {
 } from "lucide-react";
 import { LANGS } from "@/lib/i18n";
 import { useApp } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
 import { LEVEL_COLOR, fmtHour, fmtTime, hourlyForecast, type CrowdLevel } from "@/lib/crowd";
 import { sitePhoto } from "@/lib/sites";
-import { speak, stopSpeaking, useSpeaking } from "@/lib/tts";
+import { setNaturalVoice, speak, stopSpeaking, useSpeaking, useVoiceSettings } from "@/lib/tts";
 import type { Site } from "@/lib/types";
 
 /* ---------- Language switch ---------- */
@@ -52,7 +52,7 @@ export function LangSwitch({ compact = false }: { compact?: boolean }) {
 export function MenuButton() {
   const [open, setOpen] = useState(false);
   const { t, a11y, setA11y } = useApp();
-  const { user, signOut } = useAuth();
+  const voice = useVoiceSettings();
   const links = [
     { href: "/passport", icon: Stamp, label: t("menu.passport") },
     { href: "/sos", icon: ShieldAlert, label: t("menu.sos") },
@@ -69,10 +69,13 @@ export function MenuButton() {
       >
         <Menu size={18} />
       </button>
-      {open && (
+      {open &&
+        // Portal to <body>: headers use backdrop-blur, which would otherwise trap this
+        // "fixed" sheet inside the header box (only its bottom edge was visible).
+        createPortal(
         <div className="fixed inset-0 z-[75] mx-auto flex max-w-md flex-col justify-end bg-black/60" onClick={() => setOpen(false)}>
           <div
-            className="fade-up safe-bottom rounded-t-3xl border-t border-gold/30 bg-maroon-900 p-5"
+            className="fade-up safe-bottom max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-gold/30 bg-maroon-900 p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -98,6 +101,21 @@ export function MenuButton() {
                 <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-cream transition-all ${a11y ? "left-[22px]" : "left-0.5"}`} />
               </span>
             </button>
+            <button
+              onClick={() => setNaturalVoice(!voice.natural)}
+              className="card mt-2 flex w-full items-center gap-3 px-4 py-3 text-left"
+              role="switch"
+              aria-checked={voice.natural}
+            >
+              <AudioLines className="text-gold" size={22} />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold">{t("voice.natural")}</span>
+                <span className="text-xs text-muted">{t("voice.naturalD")}</span>
+              </span>
+              <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${voice.natural ? "bg-teal" : "bg-maroon-600"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-cream transition-all ${voice.natural ? "left-[22px]" : "left-0.5"}`} />
+              </span>
+            </button>
             <div className="mt-3 grid grid-cols-1 gap-2">
               {links.map(({ href, icon: Icon, label }) => (
                 <Link key={href} href={href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-maroon-800">
@@ -105,28 +123,9 @@ export function MenuButton() {
                 </Link>
               ))}
             </div>
-            {user && (
-              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-serif text-lg font-semibold text-maroon-950">
-                  {user.name.trim().charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-white">{user.name}</span>
-                  <span className="block truncate text-xs text-muted">{user.email}</span>
-                </span>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    signOut();
-                  }}
-                  className="btn-ghost shrink-0 px-3 py-2 text-xs"
-                >
-                  <LogOut size={14} /> {t("auth.signout")}
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
@@ -275,15 +274,14 @@ export function SpeakButton({
   href?: string;
   className?: string;
 }) {
-  const { lang, t, toast } = useApp();
+  const { lang, t } = useApp();
   const speaking = useSpeaking();
   const active = speaking === id;
   return (
     <button
-      onClick={async () => {
+      onClick={() => {
         if (active) return stopSpeaking();
-        const r = await speak(id, text, lang, { title, href });
-        if (r === "none") toast(lang === "kn" ? "ಈ ಫೋನ್‌ನಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ." : "Voice not available on this device.");
+        speak(id, text, lang, { title, href });
       }}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
         active ? "border-teal bg-teal text-maroon-950" : "border-gold/40 text-gold-light hover:bg-maroon-700"

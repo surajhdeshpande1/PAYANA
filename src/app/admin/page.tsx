@@ -15,6 +15,7 @@ import {
   Megaphone,
   RefreshCw,
   Route,
+  Trash2,
   TrendingUp,
   UserCheck,
   UserPlus,
@@ -81,6 +82,7 @@ export default function AdminPage() {
   const [pin, setPin] = useState("");
   const [regs, setRegs] = useState<Reg[] | null>(null);
   const [pinErr, setPinErr] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   // projection assumptions
   const [visitors, setVisitors] = useState(500000);
   const [adoption, setAdoption] = useState(10);
@@ -114,6 +116,17 @@ export default function AdminPage() {
     } catch {
       setPinErr("Invalid PIN or offline");
       setRegs(null);
+    }
+  };
+
+  const removeArtisan = async (id: string) => {
+    setConfirmRemove(null);
+    try {
+      await sbRpc("admin_delete_artisan", { p_pin: pin, p_id: id });
+      await loadRegs();
+      load();
+    } catch {
+      setPinErr("Could not remove");
     }
   };
 
@@ -516,6 +529,23 @@ export default function AdminPage() {
                       <XCircle size={14} /> Reject
                     </button>
                   </div>
+                  {confirmRemove === r.id ? (
+                    <div className="mt-2 rounded-xl border border-packed/40 bg-packed/10 p-2.5">
+                      <p className="text-xs text-cream">Remove {r.name} from the app? They will have to register again.</p>
+                      <div className="mt-2 flex gap-2">
+                        <button onClick={() => setConfirmRemove(null)} className="btn-ghost flex-1 py-2 text-xs">
+                          Cancel
+                        </button>
+                        <button onClick={() => removeArtisan(r.id)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-packed py-2 text-xs font-semibold text-white">
+                          <Trash2 size={13} /> Yes, remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmRemove(r.id)} className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-packed/50 py-2 text-xs font-semibold text-packed">
+                      <Trash2 size={13} /> Remove from app
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

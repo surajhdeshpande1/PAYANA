@@ -13,7 +13,7 @@ import { SpeakButton, TopBar } from "@/components/ui";
 import type { GuideMessage } from "@/lib/types";
 
 const CHAT_KEY = "payana_chat_v1";
-const MAX_REC_SECONDS = 20;
+const MAX_REC_SECONDS = 30;
 
 export default function GuidePage() {
   const { t, lang, crowd, toast } = useApp();

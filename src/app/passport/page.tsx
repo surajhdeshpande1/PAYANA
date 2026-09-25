@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Check, Gem, Lock, RotateCcw, Share2 } from "lucide-react";
+import { Check, Gem, Lock, LogOut, RotateCcw, Share2 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { SITES, sitePhoto } from "@/lib/sites";
@@ -11,7 +11,7 @@ import { TopBar } from "@/components/ui";
 
 export default function PassportPage() {
   const { t, lang, stamps, artisanContacted, crowdReported, resetPassport, toast } = useApp();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [confirming, setConfirming] = useState(false);
   const points = passportPoints(stamps);
   const count = Object.keys(stamps).length;
@@ -157,6 +157,24 @@ export default function PassportPage() {
           ))}
         </div>
       </section>
+
+      {user && (
+        <section className="mt-6 px-4">
+          <h2 className="section-title mb-3">{t("pass.account")}</h2>
+          <div className="card flex items-center gap-3 px-4 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-serif text-lg font-semibold text-maroon-950">
+              {user.name.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-white">{user.name}</span>
+              <span className="block truncate text-xs text-muted">{user.email}</span>
+            </span>
+            <button onClick={signOut} className="btn-ghost shrink-0 px-3 py-2 text-xs">
+              <LogOut size={14} /> {t("auth.signout")}
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

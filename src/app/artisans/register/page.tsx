@@ -19,13 +19,25 @@ export default function RegisterPage() {
   const { t, lang, toast } = useApp();
   const [photo, setPhoto] = useState<{ blob: Blob; preview: string } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [pickErr, setPickErr] = useState("");
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   async function pickPhoto(file: File) {
-    const img = await compressImage(file, 1280, 0.85);
-    const blob = await (await fetch(img.dataUrl)).blob();
-    setPhoto({ blob, preview: img.dataUrl });
+    setPickErr("");
+    try {
+      const img = await compressImage(file, 1280, 0.85);
+      const blob = await (await fetch(img.dataUrl)).blob();
+      setPhoto({ blob, preview: img.dataUrl });
+    } catch {
+      setPickErr(t("reg.photoBad"));
+    }
   }
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) pickPhoto(file);
+    e.target.value = "";
+  };
   const [f, setF] = useState({
     name: "",
     craft: "",
@@ -116,7 +128,11 @@ export default function RegisterPage() {
       <div className="pb-nav">
         <TopBar title={t("reg.title")} />
         <div className="fade-up flex flex-col items-center px-8 pt-16 text-center">
-          <CheckCircle2 size={64} className="text-teal" />
+          {photo ? (
+            <img src={photo.preview} alt="" className="h-28 w-28 rounded-2xl border-2 border-gold/60 object-cover shadow-xl" />
+          ) : (
+            <CheckCircle2 size={64} className="text-teal" />
+          )}
           <p className="mt-4 font-serif text-xl text-gold-light">{t(state === "done" ? "reg.done" : "reg.queued")}</p>
           <Link href="/artisans" className="btn-gold mt-8">
             {t("nav.artisans")} →
@@ -131,6 +147,51 @@ export default function RegisterPage() {
       <TopBar title={t("reg.title")} />
       <form onSubmit={submit} className="space-y-4 px-4 pt-4">
         <p className="text-sm text-sand">{t("reg.sub")}</p>
+        {/* Photo first — it's what tourists see on the Artisans page and in trip plans */}
+        <div className="card space-y-3 border-gold/40 p-4">
+          <p className="label mb-0 flex items-center gap-1.5">
+            <Camera size={12} /> {t("reg.photo")}
+            <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-gold-light">
+              {t("reg.photoRec")}
+            </span>
+          </p>
+          {photo ? (
+            <div className="relative h-52 overflow-hidden rounded-xl border border-white/10">
+              <img src={photo.preview} alt="" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => setPhoto(null)} className="absolute right-2 top-2 rounded-full bg-maroon-950/80 p-1.5 text-white" aria-label={t("close")}>
+                <X size={15} />
+              </button>
+              <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-maroon-950/80 px-2.5 py-1 text-[11px] font-semibold text-teal">
+                <CheckCircle2 size={12} /> {t("reg.photoOk")}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              className="relative flex h-52 w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-gold/40 text-center"
+            >
+              <img src={sitePhotoKey(CATEGORY_PHOTO[f.category]).src} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-maroon-950 shadow-lg">
+                <ImagePlus size={26} />
+              </span>
+              <span className="relative px-6 text-sm font-semibold text-cream">{t("reg.photoTap")}</span>
+            </button>
+          )}
+          {pickErr && <p className="text-xs text-packed">{pickErr}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => cameraRef.current?.click()} className="btn-ghost py-2.5 text-sm">
+              <Camera size={16} /> {t("reg.photoCamera")}
+            </button>
+            <button type="button" onClick={() => galleryRef.current?.click()} className="btn-ghost py-2.5 text-sm">
+              <ImagePlus size={16} /> {photo ? t("reg.photoChange") : t("reg.photoGallery")}
+            </button>
+          </div>
+          <p className="text-[11px] leading-snug text-muted">{t("reg.photoHint")}</p>
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+        </div>
+
         <label className="block">
           <span className="label">{t("reg.name")} *</span>
           <input className="input" value={f.name} onChange={set("name")} maxLength={80} required />
@@ -193,36 +254,6 @@ export default function RegisterPage() {
               <ExternalLink size={14} /> {t("reg.checkMap")}
             </a>
           )}
-        </div>
-
-        {/* Photo — makes the listing attractive in the Artisans tab and in trip plans */}
-        <div className="card space-y-3 p-4">
-          <p className="label mb-0 flex items-center gap-1.5">
-            <Camera size={12} /> {t("reg.photo")}
-          </p>
-          <div className="relative h-40 overflow-hidden rounded-xl border border-white/10">
-            <img src={photo?.preview || sitePhotoKey(CATEGORY_PHOTO[f.category]).src} alt="" className={`h-full w-full object-cover ${photo ? "" : "opacity-60"}`} />
-            {photo && (
-              <button type="button" onClick={() => setPhoto(null)} className="absolute right-2 top-2 rounded-full bg-maroon-950/80 p-1.5 text-white" aria-label={t("close")}>
-                <X size={15} />
-              </button>
-            )}
-          </div>
-          <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost w-full">
-            <ImagePlus size={16} /> {photo ? t("reg.photoChange") : t("reg.photoAdd")}
-          </button>
-          <p className="text-[11px] leading-snug text-muted">{t("reg.photoHint")}</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) pickPhoto(file);
-              e.target.value = "";
-            }}
-          />
         </div>
 
         <label className="block">

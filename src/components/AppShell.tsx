@@ -14,7 +14,7 @@ import AuthScreen from "./AuthScreen";
 import { useAuth } from "@/lib/auth";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { ready, langChosen, online, toasts, t, demoStep } = useApp();
+  const { ready, langChosen, online, toasts, t, toast, demoStep } = useApp();
   const auth = useAuth();
   const path = usePathname();
   const bare = path?.startsWith("/share/print");
@@ -27,6 +27,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
     return () => document.removeEventListener("pointerdown", unlock);
   }, []);
+
+  useEffect(() => {
+    const onNoVoice = () => toast(t("voice.none"));
+    window.addEventListener("payana:novoice", onNoVoice);
+    return () => window.removeEventListener("payana:novoice", onNoVoice);
+  }, [toast, t]);
 
   if (bare) return <>{children}</>;
 

@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Camera,
   CheckCircle2,
+  Download,
+  FileSpreadsheet,
   Gem,
+  Printer,
   HandHeart,
   KeyRound,
   Loader2,
@@ -18,7 +21,8 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { SAMPLE_ARTISANS } from "@/lib/artisans";
-import { getSite } from "@/lib/sites";
+import { SITES, getSite } from "@/lib/sites";
+import { LEVEL_COLOR, bestHours, fmtHour, hourlyForecast } from "@/lib/crowd";
 import { sbRpc } from "@/lib/supabase";
 import { localEventCounts } from "@/lib/analytics";
 import { TopBar } from "@/components/ui";
@@ -61,7 +65,7 @@ function ago(iso: string) {
 }
 
 export default function AdminPage() {
-  const { t, lang } = useApp();
+  const { t, lang, crowd } = useApp();
   const [stats, setStats] = useState<Stats | null>(null);
   const [offline, setOffline] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -144,6 +148,50 @@ export default function AdminPage() {
   const hourMax = Math.max(1, ...hourly.map((h) => h.c));
   const contacts = Object.entries(stats?.artisan_contacts ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
+  // District report rows
+  const today = new Date();
+  const reportDate = today.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const siteRows = SITES.map((s) => {
+    const c = crowd(s, undefined);
+    const hours = hourlyForecast(s, today);
+    const peak = hours.reduce((a, b) => (b.pct > a.pct ? b : a), hours[0]);
+    return {
+      id: s.id,
+      name: s.name.en,
+      gem: s.lesserKnown,
+      now: c.pct,
+      level: c.level,
+      peakPct: peak.pct,
+      peakHour: peak.hour,
+      bestHour: bestHours(s, today)[0] ?? 7,
+      reports: c.reports,
+      appUse: stats?.sites?.[s.id] ?? 0,
+      rerouted: stats?.reroute_to?.[s.id] ?? 0,
+    };
+  }).sort((a, b) => b.now - a.now);
+
+  const downloadCsv = () => {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [
+      ["PAYANA — District footfall & tourism report", reportDate].map(esc).join(","),
+      "",
+      ["Metric", "Value"].map(esc).join(","),
+      ...kpis.map((k) => [k.l, k.v].map(esc).join(",")),
+      ...Object.entries(stats?.langs ?? {}).map(([k, v]) => [`Language: ${k}`, v].map(esc).join(",")),
+      "",
+      ["Site", "Hidden gem", "Crowd now (%)", "Peak today (%)", "Peak hour", "Best hour", "Live reports (2h)", "App use", "Visitors rerouted in"].map(esc).join(","),
+      ...siteRows.map((r) =>
+        [r.name, r.gem ? "yes" : "no", r.now, r.peakPct, fmtHour(r.peakHour), fmtHour(r.bestHour), r.reports, r.appUse, r.rerouted].map(esc).join(","),
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `payana-district-report-${today.toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
   // Projection
   const users = (visitors * adoption) / 100;
   const redistributed = (users * accept) / 100;
@@ -185,6 +233,68 @@ export default function AdminPage() {
               <p className="text-[11px] text-muted">{l}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* District Administrator report: site-wise crowd & footfall index */}
+      <section className="mt-5 px-4">
+        <div className="card p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="section-title flex items-center gap-2">
+                <FileSpreadsheet size={17} className="text-gold" /> District footfall report
+              </h2>
+              <p className="text-[11px] text-muted">
+                {reportDate} · crowd index per site (model + live visitor reports) with app activity
+              </p>
+            </div>
+          </div>
+          <div className="no-print mt-3 flex gap-2">
+            <button onClick={downloadCsv} className="btn-gold flex-1 py-2 text-xs">
+              <Download size={14} /> Download CSV
+            </button>
+            <button onClick={() => window.print()} className="btn-ghost flex-1 py-2 text-xs">
+              <Printer size={14} /> Print / PDF
+            </button>
+          </div>
+          <div className="-mx-1 mt-3 overflow-x-auto">
+            <table className="w-full min-w-[420px] text-left text-[11px]">
+              <thead className="text-[10px] uppercase tracking-wider text-gold">
+                <tr>
+                  <th className="px-1 py-1.5 font-semibold">Site</th>
+                  <th className="px-1 py-1.5 font-semibold">Now</th>
+                  <th className="px-1 py-1.5 font-semibold">Peak today</th>
+                  <th className="px-1 py-1.5 font-semibold">Best time</th>
+                  <th className="px-1 py-1.5 font-semibold">Reports</th>
+                  <th className="px-1 py-1.5 font-semibold">App use</th>
+                  <th className="px-1 py-1.5 font-semibold">Rerouted in</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {siteRows.map((r) => (
+                  <tr key={r.id}>
+                    <td className="px-1 py-1.5 font-medium text-cream">
+                      {r.gem ? "💎 " : ""}
+                      {r.name}
+                    </td>
+                    <td className="px-1 py-1.5 font-semibold" style={{ color: LEVEL_COLOR[r.level] }}>
+                      {r.now}%
+                    </td>
+                    <td className="px-1 py-1.5 text-sand">
+                      {r.peakPct}% @ {fmtHour(r.peakHour)}
+                    </td>
+                    <td className="px-1 py-1.5 text-teal">{fmtHour(r.bestHour)}</td>
+                    <td className="px-1 py-1.5 text-sand">{r.reports}</td>
+                    <td className="px-1 py-1.5 text-sand">{r.appUse}</td>
+                    <td className="px-1 py-1.5 text-sand">{r.rerouted}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[10px] leading-snug text-muted">
+            Crowd index 0–100 is an estimate (day, hour, season, holidays, festivals) adjusted by live visitor reports from the last 2 hours. App use = anonymous scans and guide questions per site.
+          </p>
         </div>
       </section>
 

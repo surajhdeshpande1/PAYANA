@@ -22,6 +22,8 @@ export async function POST(request: Request) {
     .map((m) => ({ role: m.role, text: m.text.slice(0, 2000) }))
     .slice(-10);
 
-  const result = await runGuide(body);
+  // ?provider=groq|gemini forces one provider (used to verify the fallback works).
+  const forced = new URL(request.url).searchParams.get("provider");
+  const result = await runGuide(body, forced === "groq" || forced === "gemini" ? forced : undefined);
   return Response.json(result, { headers: { "Cache-Control": "no-store" } });
 }

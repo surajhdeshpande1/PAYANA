@@ -313,16 +313,16 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
 
 /* ---------------- Orchestration ---------------- */
 
-export async function runGuide(req: GuideRequest): Promise<GuideResponse> {
+export async function runGuide(req: GuideRequest, force?: "gemini" | "groq"): Promise<GuideResponse> {
   const errors: string[] = [];
-  if (GEMINI_KEY) {
+  if (GEMINI_KEY && force !== "groq") {
     try {
       return await callGemini(req);
     } catch (e) {
       errors.push(String(e));
     }
   }
-  if (GROQ_KEY) {
+  if (GROQ_KEY && force !== "gemini") {
     try {
       return await callGroq(req);
     } catch (e) {

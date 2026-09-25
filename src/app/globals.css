@@ -299,3 +299,22 @@ body {
     display: none !important;
   }
 }
+
+/* Printable reports (District Administrator dashboard) */
+@media print {
+  * {
+    color: #111 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  header,
+  nav {
+    display: none !important;
+  }
+  .card {
+    border: 1px solid #bbb !important;
+    break-inside: avoid;
+  }
+}

@@ -173,7 +173,7 @@ export function CrowdChart({ site, day, highlight }: { site: Site; day: Date; hi
           const isNow = highlight === d.hour;
           const best = d.pct <= min + 6 && d.hour <= 17;
           return (
-            <div key={d.hour} className="flex flex-1 flex-col items-center justify-end gap-1">
+            <div key={d.hour} className="flex h-full flex-1 flex-col items-center justify-end">
               <div
                 className="w-full rounded-t-md transition-all"
                 style={{

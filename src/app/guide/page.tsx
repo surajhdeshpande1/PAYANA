@@ -42,6 +42,7 @@ export default function GuidePage() {
   }, []);
 
   useEffect(() => {
+    if (!messages.length) return; // cleared explicitly via the reset button
     try {
       sessionStorage.setItem(
         CHAT_KEY,
@@ -179,7 +180,14 @@ export default function GuidePage() {
         title={t("guide.title")}
         right={
           messages.length > 0 ? (
-            <button onClick={() => setMessages([])} className="rounded-full px-2 py-1 text-[11px] text-muted hover:text-cream">
+            <button
+              onClick={() => {
+                setMessages([]);
+                try {
+                  sessionStorage.removeItem(CHAT_KEY);
+                } catch {}
+              }}
+              className="rounded-full px-2 py-1 text-[11px] text-muted hover:text-cream">
               ↺
             </button>
           ) : undefined

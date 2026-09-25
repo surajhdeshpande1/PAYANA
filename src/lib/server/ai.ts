@@ -257,7 +257,7 @@ async function groqTranscribe(audio: { data: string; mime: string }) {
   const form = new FormData();
   const bytes = Buffer.from(audio.data, "base64");
   form.append("file", new Blob([bytes], { type: audio.mime }), "question.wav");
-  form.append("model", GROQ_STT);
+  form.append("model", (await groqModels()).stt);
   form.append("response_format", "json");
   const res = await withTimeout(25000, (signal) =>
     fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
@@ -267,7 +267,7 @@ async function groqTranscribe(audio: { data: string; mime: string }) {
       body: form,
     }),
   );
-  if (!res.ok) throw new Error(`groq stt ${res.status}`);
+  if (!res.ok) throw new Error(`groq stt ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const j = await res.json();
   return String(j.text || "").trim();
 }
@@ -288,7 +288,9 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
         { type: "image_url", image_url: { url: `data:${req.image.mime};base64,${req.image.data}` } },
       ]
     : task;
-  const model = req.image ? GROQ_VISION : GROQ_TEXT;
+  const available = await groqModels();
+  const model = req.image ? available.vision : available.text;
+  if (!model) throw new Error("groq: no suitable model available");
   const body: Record<string, unknown> = {
     model,
     temperature: 0.4,
@@ -309,6 +311,44 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
   const out = normalise(parseJson(j.choices?.[0]?.message?.content || ""), "groq", model);
   if (transcript) out.transcript = transcript;
   return out;
+}
+
+/* Discover Groq models (Groq also retires model names over time). */
+let GROQ_CACHE: { at: number; text?: string; vision?: string; stt: string } | null = null;
+
+async function groqModels() {
+  if (GROQ_CACHE && Date.now() - GROQ_CACHE.at < 3600_000) return GROQ_CACHE;
+  const pick = (ids: string[], patterns: RegExp[]) => {
+    for (const p of patterns) {
+      const hit = ids.find((id) => p.test(id));
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+  let ids: string[] = [];
+  try {
+    const res = await withTimeout(8000, (signal) =>
+      fetch("https://api.groq.com/openai/v1/models", { headers: { Authorization: `Bearer ${GROQ_KEY}` }, signal }),
+    );
+    if (res.ok) {
+      const j = (await res.json()) as { data?: { id: string; active?: boolean }[] };
+      ids = (j.data || []).filter((m) => m.active !== false).map((m) => m.id);
+    }
+  } catch {}
+  const chatIds = ids.filter((id) => !/(whisper|guard|tts|orpheus|playai|distil|prompt|safeguard|compound)/i.test(id));
+  GROQ_CACHE = {
+    at: Date.now(),
+    text:
+      process.env.GROQ_TEXT_MODEL ||
+      pick(chatIds, [/gpt-oss-120b/, /llama-3\.3-70b/, /llama-4-maverick/, /kimi-k2/, /qwen3?-.*32b/, /llama-4/, /gpt-oss/, /llama/, /./]) ||
+      GROQ_TEXT,
+    vision:
+      process.env.GROQ_VISION_MODEL ||
+      pick(chatIds, [/llama-4-(scout|maverick)/, /vision/, /qwen.*vl/i, /-vl-/i, /llama-4/]) ||
+      (ids.length ? undefined : GROQ_VISION),
+    stt: pick(ids, [/whisper-large-v3-turbo/, /whisper-large-v3/, /whisper/]) || GROQ_STT,
+  };
+  return GROQ_CACHE;
 }
 
 /* ---------------- Orchestration ---------------- */
@@ -410,4 +450,12 @@ export async function synthesize(text: string, lang: Lang): Promise<Buffer | nul
     } catch {}
   }
   return null;
+}
+
+/** Which models this deployment will use (for /api/health?models=1). */
+export async function aiModels() {
+  return {
+    gemini: GEMINI_KEY ? await geminiModels() : [],
+    groq: GROQ_KEY ? await groqModels() : null,
+  };
 }

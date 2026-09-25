@@ -67,7 +67,8 @@ export interface Artisan {
 
 export interface CrowdReport {
   site_id: string;
-  level: number; // 1..5
+  level?: number; // legacy 1..5 faces
+  rating?: number; // 1 (empty) .. 10 (packed)
   created_at: string;
 }
 

@@ -318,3 +318,266 @@ body {
     break-inside: avoid;
   }
 }
+
+/* ---------- Landing film (7 s) — see components/Intro.tsx ---------- */
+.pi-root {
+  animation: pi-out 0.7s 6.3s ease forwards;
+}
+@keyframes pi-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.pi-scene {
+  transform-origin: 50% 55%;
+  animation: pi-zoom 7s ease-in-out forwards;
+}
+@keyframes pi-zoom {
+  0% {
+    transform: scale(1.05);
+  }
+  86% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+.pi-draw {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: pi-draw var(--d, 1.4s) var(--dl, 0s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.pi-draw.pi-fill {
+  fill-opacity: 0;
+  animation:
+    pi-draw var(--d, 1.4s) var(--dl, 0s) cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    pi-fillin 1s calc(var(--dl, 0s) + var(--d, 1.4s) * 0.6) ease forwards;
+}
+@keyframes pi-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes pi-fillin {
+  to {
+    fill-opacity: 0.92;
+  }
+}
+.pi-fade {
+  opacity: 0;
+  animation: pi-fade var(--d, 0.8s) var(--dl, 0s) ease forwards;
+}
+@keyframes pi-fade {
+  to {
+    opacity: var(--to, 1);
+  }
+}
+.pi-fadeout {
+  animation: pi-fadeout var(--d, 0.6s) var(--dl, 0s) ease forwards;
+}
+@keyframes pi-fadeout {
+  to {
+    opacity: 0;
+  }
+}
+.pi-inout {
+  opacity: 0;
+  animation: pi-inout var(--d, 1.6s) var(--dl, 0s) ease forwards;
+}
+@keyframes pi-inout {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  22%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.pi-sun {
+  animation: pi-rise 2.8s 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes pi-rise {
+  from {
+    transform: translateY(230px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.pi-stitch {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pi-stitch 0.35s var(--dl, 0s) ease-out forwards;
+}
+@keyframes pi-stitch {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-45deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pi-spark {
+  opacity: 0;
+  animation: pi-spark var(--d, 2.4s) var(--dl, 0s) ease-out forwards;
+}
+@keyframes pi-spark {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--rise, -180px));
+  }
+}
+.pi-bird {
+  opacity: 0;
+  animation: pi-fly 4.2s 3.3s linear forwards;
+}
+@keyframes pi-fly {
+  0% {
+    opacity: 0;
+    transform: translate(-60px, 0);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(470px, -70px);
+  }
+}
+.pi-flap {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pi-flap 0.45s ease-in-out infinite alternate;
+}
+@keyframes pi-flap {
+  to {
+    transform: scaleY(0.25);
+  }
+}
+.pi-ripple {
+  animation: pi-ripple 2.2s ease-in-out infinite alternate;
+}
+@keyframes pi-ripple {
+  to {
+    transform: translateX(9px);
+  }
+}
+.pi-reveal {
+  clip-path: inset(-20% 100% -20% 0);
+  animation: pi-reveal 1s var(--dl, 0s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes pi-reveal {
+  to {
+    clip-path: inset(-20% 0 -20% 0);
+  }
+}
+.pi-up {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: pi-up 0.8s var(--dl, 0s) ease forwards;
+}
+@keyframes pi-up {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pi-track {
+  opacity: 0;
+  letter-spacing: 0.9em;
+  animation: pi-track 1.2s var(--dl, 0s) ease forwards;
+}
+@keyframes pi-track {
+  to {
+    opacity: 1;
+    letter-spacing: 0.45em;
+  }
+}
+.pi-line {
+  transform: scaleX(0);
+  animation: pi-line 0.9s var(--dl, 0s) ease forwards;
+}
+@keyframes pi-line {
+  to {
+    transform: scaleX(1);
+  }
+}
+/* Ilkal saree border: kumkum-red band with gold "tope teni" (temple-tooth) triangles */
+.pi-band {
+  height: 28px;
+}
+.pi-band-top {
+  background:
+    linear-gradient(#d9b36c, #d9b36c) 0 12px / 100% 1px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='15'%3E%3Cpath d='M0 0 L10 14 L20 0Z' fill='%23d9b36c'/%3E%3C/svg%3E") 0 13px / 20px 15px repeat-x,
+    linear-gradient(#6d121b, #9a1f2a) 0 0 / 100% 13px no-repeat;
+  transform: translateY(-110%);
+  animation: pi-band 0.8s 4.1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.pi-band-bottom {
+  background:
+    linear-gradient(#d9b36c, #d9b36c) 0 15px / 100% 1px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='15'%3E%3Cpath d='M0 15 L10 1 L20 15Z' fill='%23d9b36c'/%3E%3C/svg%3E") 0 0 / 20px 15px repeat-x,
+    linear-gradient(#9a1f2a, #6d121b) 0 15px / 100% 13px no-repeat;
+  transform: translateY(110%);
+  animation: pi-band 0.8s 4.1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes pi-band {
+  to {
+    transform: none;
+  }
+}
+.pi-sweep {
+  animation: pi-sweep 1.1s 5.7s ease-in-out both;
+}
+@keyframes pi-sweep {
+  from {
+    transform: translateX(-170%) skewX(-18deg);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(260%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+.pi-skip {
+  opacity: 0;
+  animation: pi-fade 0.5s 1s ease forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pi-scene,
+  .pi-bird,
+  .pi-flap,
+  .pi-ripple,
+  .pi-spark,
+  .pi-sweep {
+    animation: none !important;
+  }
+}

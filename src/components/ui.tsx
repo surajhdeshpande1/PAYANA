@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import {
   Accessibility,
   AudioLines,
+  LogOut,
   ChevronLeft,
   Gem,
   Landmark,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { LANGS } from "@/lib/i18n";
 import { useApp } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { LEVEL_COLOR, fmtHour, fmtTime, hourlyForecast, type CrowdLevel } from "@/lib/crowd";
 import { sitePhoto } from "@/lib/sites";
 import { setNaturalVoice, speak, stopSpeaking, useSpeaking, useVoiceSettings } from "@/lib/tts";
@@ -52,6 +54,7 @@ export function LangSwitch({ compact = false }: { compact?: boolean }) {
 export function MenuButton() {
   const [open, setOpen] = useState(false);
   const { t, a11y, setA11y } = useApp();
+  const { user, signOut } = useAuth();
   const voice = useVoiceSettings();
   const links = [
     { href: "/passport", icon: Stamp, label: t("menu.passport") },
@@ -122,6 +125,17 @@ export function MenuButton() {
                   <Icon size={19} className="text-gold" /> {label}
                 </Link>
               ))}
+              {user && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    signOut();
+                  }}
+                  className="mt-1 flex items-center gap-3 rounded-xl border-t border-white/10 px-3 py-3 text-left text-sm text-packed hover:bg-maroon-800"
+                >
+                  <LogOut size={19} /> {t("auth.signout")}
+                </button>
+              )}
             </div>
           </div>
         </div>,
@@ -306,32 +320,40 @@ export function SpeakButton({
   );
 }
 
-/* ---------- Crowd reporter ---------- */
-const FACES = ["😌", "🙂", "😐", "😣", "🥵"];
+/* ---------- Crowd reporter (1 = almost empty … 10 = packed) ---------- */
+export const ratingColor = (r: number) => `hsl(${Math.round(150 - ((r - 1) * 150) / 9)} 72% 52%)`;
+
 export function CrowdReporter({ site }: { site: Site }) {
   const { t, reportCrowd, toast, isLive } = useApp();
   const [sent, setSent] = useState<number | null>(null);
   if (!isLive) return null;
   return (
     <div className="card p-4">
-      <p className="mb-2 text-sm font-semibold text-cream">{t("crowd.report")}</p>
-      <div className="flex justify-between gap-1">
-        {FACES.map((f, i) => (
+      <p className="text-sm font-semibold text-cream">{t("crowd.report")}</p>
+      <p className="mb-3 text-[11px] text-muted">{t("crowd.scale")}</p>
+      <div className="grid grid-cols-5 gap-1.5">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((r) => (
           <button
-            key={f}
+            key={r}
             onClick={() => {
-              setSent(i + 1);
-              reportCrowd(site.id, i + 1);
+              setSent(r);
+              reportCrowd(site.id, r);
               toast(t("crowd.reportThanks"));
             }}
-            className={`flex h-12 flex-1 items-center justify-center rounded-xl border text-2xl transition active:scale-90 ${
-              sent === i + 1 ? "border-gold bg-gold/20" : "border-gold/15 bg-maroon-900/60"
+            className={`flex h-11 items-center justify-center rounded-xl border font-display text-lg font-semibold transition active:scale-90 ${
+              sent === r ? "border-white text-maroon-950" : "border-white/10 text-cream"
             }`}
-            aria-label={`Crowd level ${i + 1} of 5`}
+            style={{ background: sent === r ? ratingColor(r) : `color-mix(in srgb, ${ratingColor(r)} 22%, transparent)` }}
+            aria-label={`${t("crowd.rate")} ${r} / 10`}
           >
-            {f}
+            {r}
           </button>
         ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10px] text-muted">
+        <span>1 · {t("crowd.empty")}</span>
+        {sent && <span className="font-semibold text-gold-light">{t("crowd.youRated", { r: sent })}</span>}
+        <span>10 · {t("crowd.packedEnd")}</span>
       </div>
     </div>
   );

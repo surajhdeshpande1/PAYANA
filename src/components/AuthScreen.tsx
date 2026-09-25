@@ -3,14 +3,21 @@
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, Lock, LogIn, Mail, ShieldCheck, User, UserPlus } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
+import { HAS_ACCOUNT_KEY, useAuth } from "@/lib/auth";
 import { LangSwitch } from "./ui";
 
 /** Sign up / sign in — shown before the app until the tourist has an account session. */
 export default function AuthScreen() {
-  const { t } = useApp();
+  const { t, lang, setLang } = useApp();
   const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+  // New visitors start on "Create account"; someone who has signed in on this phone before starts on "Sign in".
+  const [mode, setMode] = useState<"signin" | "signup">(() => {
+    try {
+      return localStorage.getItem(HAS_ACCOUNT_KEY) ? "signin" : "signup";
+    } catch {
+      return "signup";
+    }
+  });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,6 +34,7 @@ export default function AuthScreen() {
     setBusy(true);
     const res = mode === "signup" ? await signUp(name.trim(), email.trim(), password) : await signIn(email.trim(), password);
     setBusy(false);
+    if (!res) setLang(lang); // keep the language shown here; no separate language screen afterwards
     if (res) {
       setErr(t(`auth.err.${res}`));
       if (res === "taken") setMode("signin");

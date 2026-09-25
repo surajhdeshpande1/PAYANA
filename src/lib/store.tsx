@@ -39,7 +39,7 @@ interface AppState extends Persisted, Passport {
   now: Date;
   isLive: boolean;
   reports: CrowdReport[];
-  reportCrowd: (siteId: string, level: number) => void;
+  reportCrowd: (siteId: string, rating: number) => void;
   crowd: (site: Site, at?: Date) => { pct: number; level: CrowdLevel; reports: number };
   stamp: (siteId: string) => boolean;
   markArtisanContacted: () => void;
@@ -177,14 +177,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const since = new Date(Date.now() - 2 * 3600_000).toISOString();
       const rows = await sbSelect<CrowdReport>(
         "crowd_reports",
-        `select=site_id,level,created_at&created_at=gte.${since}&order=created_at.desc&limit=300`,
+        `select=site_id,level,rating,created_at&created_at=gte.${since}&order=created_at.desc&limit=300`,
       );
       // Retry pending uploads now that we're connected.
       if (pending.length) {
         const still: CrowdReport[] = [];
         for (const r of pending) {
           try {
-            await sbInsert("crowd_reports", { site_id: r.site_id, level: r.level });
+            await sbInsert("crowd_reports", r.rating ? { site_id: r.site_id, rating: r.rating } : { site_id: r.site_id, level: r.level });
           } catch {
             still.push(r);
           }
@@ -228,13 +228,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const reportCrowd = useCallback(
-    (siteId: string, level: number) => {
-      const r: CrowdReport = { site_id: siteId, level, created_at: new Date().toISOString() };
+    (siteId: string, rating: number) => {
+      const r: CrowdReport = { site_id: siteId, rating, created_at: new Date().toISOString() };
       setReports((rs) => [r, ...rs]);
       setPassport((s) => ({ ...s, crowdReported: true }));
       flag("crowd");
-      track("crowd_report", { siteId, lang: p.lang, meta: { level } });
-      sbInsert("crowd_reports", { site_id: siteId, level }).catch(() => {
+      track("crowd_report", { siteId, lang: p.lang, meta: { rating } });
+      sbInsert("crowd_reports", { site_id: siteId, rating }).catch(() => {
         try {
           const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
           pending.push(r);

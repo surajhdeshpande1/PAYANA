@@ -1,5 +1,38 @@
+import { useEffect, useState } from "react";
+import { SAMPLE_ARTISANS } from "./artisans";
 import { sbInsert, sbSelect } from "./supabase";
 import type { Artisan, ArtisanCategory } from "./types";
+
+const REMOVED_KEY = "payana_removed_artisans";
+
+/** Built-in listings the admin removed (last known list, for offline use). */
+export function cachedRemoved(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(REMOVED_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRemovedArtisans(): Promise<string[]> {
+  const rows = await sbSelect<{ artisan_key: string }>("removed_artisans", "select=artisan_key");
+  const keys = rows.map((r) => r.artisan_key);
+  try {
+    localStorage.setItem(REMOVED_KEY, JSON.stringify(keys));
+  } catch {}
+  return keys;
+}
+
+/** Built-in directory without the listings the admin removed. */
+export function useBuiltinArtisans(): Artisan[] {
+  const [list, setList] = useState<Artisan[]>(SAMPLE_ARTISANS);
+  useEffect(() => {
+    const apply = (keys: string[]) => setList(SAMPLE_ARTISANS.filter((a) => !keys.includes(a.id)));
+    apply(cachedRemoved());
+    fetchRemovedArtisans().then(apply).catch(() => {});
+  }, []);
+  return list;
+}
 
 export const PENDING_REG_KEY = "payana_pending_reg";
 

@@ -1,5 +1,5 @@
 /* PAYANA service worker — offline-first shell, cached heritage content & photos. */
-const VERSION = "payana-v2";
+const VERSION = "payana-v3";
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;

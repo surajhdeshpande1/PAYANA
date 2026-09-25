@@ -38,7 +38,7 @@ const T = {
 export function offlineAnswer(
   question: string,
   lang: Lang,
-  opts: { siteId?: string | null; crowd?: CrowdSnapshot; image?: boolean; audio?: boolean } = {},
+  opts: { siteId?: string | null; crowd?: CrowdSnapshot; image?: boolean; audio?: boolean; hidden?: string[] } = {},
 ): GuideResponse {
   if (opts.image) return { answer: T.noPhoto[lang], siteId: null, confidence: 0, provider: "offline" };
   if (opts.audio) return { answer: T.noVoice[lang], siteId: null, confidence: 0, provider: "offline" };
@@ -56,7 +56,7 @@ export function offlineAnswer(
 
   const site = findSiteInText(question) ?? getSite(opts.siteId);
   if (!site && CRAFT_WORDS.some((w) => q.includes(w))) {
-    const a = SAMPLE_ARTISANS[0];
+    const a = SAMPLE_ARTISANS.find((x) => !opts.hidden?.includes(x.id)) ?? SAMPLE_ARTISANS[0];
     return { answer: T.crafts[lang](a.name[lang]), siteId: "ilkal", provider: "offline" };
   }
   if (site) {

@@ -8,6 +8,7 @@ export type EventType =
   | "voice"
   | "plan"
   | "reroute"
+  | "navigate"
   | "artisan_contact"
   | "stamp"
   | "crowd_report"
@@ -16,6 +17,30 @@ export type EventType =
   | "sos";
 
 const LOCAL_KEY = "payana_local_events";
+const SID_KEY = "payana_sid";
+
+/**
+ * Random id for this app session (tab), so the dashboard can count distinct visitors
+ * and not double-count someone who rebuilds a plan. Not tied to the account or device;
+ * it disappears when the tab is closed.
+ */
+function sessionId() {
+  try {
+    let sid = sessionStorage.getItem(SID_KEY);
+    if (!sid) {
+      sid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+      sessionStorage.setItem(SID_KEY, sid);
+    }
+    return sid;
+  } catch {
+    return null;
+  }
+}
+
+/** Short random id to link a plan with its reroutes and navigation. */
+export function newPlanId() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 /** Anonymous, privacy-safe usage events: no names, no location, no device IDs. */
 export function track(
@@ -30,7 +55,7 @@ export function track(
   } catch {}
   sbInsert(
     "events",
-    { type, site_id: opts.siteId ?? null, lang: opts.lang ?? null, meta: opts.meta ?? {} },
+    { type, site_id: opts.siteId ?? null, lang: opts.lang ?? null, meta: { ...(opts.meta ?? {}), sid: sessionId() } },
     true,
   ).catch(() => {});
 }

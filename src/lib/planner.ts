@@ -46,6 +46,7 @@ export interface PlanInput {
   accessible: boolean;
   /** Approved, located artisans registered through the app (recommended before samples). */
   artisans?: Artisan[];
+  builtins?: Artisan[]; // built-in listings still shown (admin may remove some)
 }
 
 export interface Leg {
@@ -239,7 +240,7 @@ function search(input: PlanInput, crowd: CrowdFn, smart: boolean) {
 
 function artisanPool(input: PlanInput) {
   // Registered, verified businesses first, then the sample listings.
-  return [...(input.artisans ?? []), ...SAMPLE_ARTISANS];
+  return [...(input.artisans ?? []), ...(input.builtins ?? SAMPLE_ARTISANS)];
 }
 
 function near(a: Artisan, site: Site, km: number) {

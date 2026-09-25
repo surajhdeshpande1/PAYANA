@@ -18,7 +18,7 @@ import {
   Toilet,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { SAMPLE_ARTISANS } from "@/lib/artisans";
+import { useBuiltinArtisans } from "@/lib/registrations";
 import { SITES, getSite, haversineKm, mapsDirUrl, photo, sitePhoto } from "@/lib/sites";
 import { bestHours, fmtHour } from "@/lib/crowd";
 import { CrowdBadge, CrowdChart, CrowdReporter, LangSwitch, MenuButton, SiteCard, SpeakButton } from "@/components/ui";
@@ -32,7 +32,8 @@ export default function SiteDetail({ id }: { id: string }) {
   const best = bestHours(site, now);
   const stamped = Boolean(stamps[site.id]);
 
-  const artisans = SAMPLE_ARTISANS.filter((a) => a.nearSite === site.id || haversineKm(a, site) < 6).slice(0, 6);
+  const builtins = useBuiltinArtisans();
+  const artisans = builtins.filter((a) => a.nearSite === site.id || haversineKm(a, site) < 6).slice(0, 6);
   const gems = SITES.filter((s) => s.id !== site.id && s.lesserKnown)
     .map((s) => ({ s, km: haversineKm(s, site) }))
     .sort((a, b) => a.km - b.km)

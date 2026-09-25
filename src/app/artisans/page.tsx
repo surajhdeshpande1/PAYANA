@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, HandHeart, MapPin, MessageCircle, Navigation, Phone, Store } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { SAMPLE_ARTISANS } from "@/lib/artisans";
 import { getSite, mapsDirUrl, photo } from "@/lib/sites";
 import { directionsUrl } from "@/lib/location";
-import { fetchApprovedArtisans, flushPendingRegistrations } from "@/lib/registrations";
+import { fetchApprovedArtisans, flushPendingRegistrations, useBuiltinArtisans } from "@/lib/registrations";
 import { track } from "@/lib/analytics";
 import { DEMO_STEPS } from "@/lib/demo";
 import { TopBar } from "@/components/ui";
@@ -24,6 +23,7 @@ export default function ArtisansPage() {
   const { t, lang, toast, markArtisanContacted, demoStep } = useApp();
   const [cat, setCat] = useState<ArtisanCategory | "all">("all");
   const [live, setLive] = useState<Artisan[]>([]);
+  const builtins = useBuiltinArtisans();
   const demo = demoStep !== null && DEMO_STEPS[demoStep]?.id === "artisans";
 
   useEffect(() => {
@@ -44,8 +44,8 @@ export default function ArtisansPage() {
   }, []);
 
   const list = useMemo(
-    () => [...live, ...SAMPLE_ARTISANS].filter((a) => cat === "all" || a.category === cat),
-    [live, cat],
+    () => [...live, ...builtins].filter((a) => cat === "all" || a.category === cat),
+    [live, builtins, cat],
   );
 
   function contact(a: Artisan, how: "call" | "whatsapp" | "directions") {

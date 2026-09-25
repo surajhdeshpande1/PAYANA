@@ -42,8 +42,8 @@ import {
   type Plan,
   type StartPoint,
 } from "@/lib/planner";
-import { fetchApprovedArtisans } from "@/lib/registrations";
-import { track } from "@/lib/analytics";
+import { fetchApprovedArtisans, useBuiltinArtisans } from "@/lib/registrations";
+import { newPlanId, track } from "@/lib/analytics";
 import { DEMO_STEPS } from "@/lib/demo";
 import { CrowdBadge, TopBar } from "@/components/ui";
 import PlaceSearch from "@/components/PlaceSearch";
@@ -94,6 +94,7 @@ export default function TripPage() {
   const [registered, setRegistered] = useState<Artisan[]>([]);
   const [rangeErr, setRangeErr] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const builtins = useBuiltinArtisans();
   const demoRan = useRef(false);
 
   useEffect(() => {
@@ -119,6 +120,10 @@ export default function TripPage() {
       : `${Math.round(minutes / 60)} ${t("trip.hrs")}`
     : "—";
 
+  const planIdRef = useRef<string | null>(null);
+  const trackNavigate = (target: "route" | "stop", siteId?: string) =>
+    track("navigate", { siteId: siteId ?? null, lang, meta: { plan_id: planIdRef.current, target, mode, stops: plan?.stops.length ?? 0 } });
+
   function build(opts?: Partial<{ start: StartPoint; startAt: Date; endAt: Date; people: number; interests: Interest[]; mode: Mode; avoid: boolean; budget: number }>) {
     const a = opts?.startAt ?? s0;
     const b = opts?.endAt ?? s1;
@@ -139,14 +144,28 @@ export default function TripPage() {
       avoidCrowds: opts?.avoid ?? avoid,
       accessible,
       artisans: registered,
+      builtins,
     };
     const p = buildPlan(input, (s, at) => crowd(s, at).pct);
     setPlan(p);
     setRoad(null);
     if (p) {
-      track("plan", { lang, meta: { stops: p.stops.length, hours: Math.round(span / 60), days: p.days, mode: input.mode, people: input.people } });
+      const planId = newPlanId();
+      planIdRef.current = planId;
+      track("plan", { lang, meta: { plan_id: planId, stops: p.stops.length, hours: Math.round(span / 60), days: p.days, mode: input.mode, people: input.people } });
       for (const r of p.reroutes) {
-        track("reroute", { siteId: r.siteId, lang, meta: { kind: r.kind, from: r.replacedId ?? null, people: input.people } });
+        track("reroute", {
+          siteId: r.siteId,
+          lang,
+          meta: {
+            plan_id: planId,
+            kind: r.kind,
+            from: r.replacedId ?? null,
+            from_pct: r.kind === "swap" ? r.replacedPct : r.fromPct,
+            to_pct: r.toPct,
+            people: input.people,
+          },
+        });
       }
     }
     setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
@@ -341,7 +360,7 @@ export default function TripPage() {
           </div>
 
           {/* Start the journey — real turn-by-turn navigation through the planned stops */}
-          <a href={navigateUrl(plan.stops, mode)} target="_blank" rel="noreferrer" className="btn-gold w-full flex-col gap-0.5 py-3.5" onClick={() => track("plan", { lang, meta: { action: "start_navigation", stops: plan.stops.length } })}>
+          <a href={navigateUrl(plan.stops, mode)} target="_blank" rel="noreferrer" className="btn-gold w-full flex-col gap-0.5 py-3.5" onClick={() => trackNavigate("route")}>
             <span className="flex items-center gap-2 text-base">
               <Navigation size={18} fill="currentColor" /> {t("trip.startNav")}
             </span>
@@ -469,6 +488,7 @@ export default function TripPage() {
                         </Link>
                         <a
                           href={stopNavigateUrl(s.site, mode)}
+                          onClick={() => trackNavigate("stop", s.site.id)}
                           target="_blank"
                           rel="noreferrer"
                           className="flex shrink-0 flex-col items-center justify-center gap-0.5 self-center rounded-xl bg-white px-3 py-2 text-[11px] font-bold text-maroon-950"
@@ -515,7 +535,7 @@ export default function TripPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-2">
-            <a href={navigateUrl(plan.stops, mode)} target="_blank" rel="noreferrer" className="btn-gold">
+            <a href={navigateUrl(plan.stops, mode)} target="_blank" rel="noreferrer" className="btn-gold" onClick={() => trackNavigate("route")}>
               <Navigation size={17} fill="currentColor" /> {t("trip.startNav")}
             </a>
             <a href={previewUrl(plan.start, plan.stops, mode)} target="_blank" rel="noreferrer" className="btn-ghost">

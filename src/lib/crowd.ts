@@ -94,7 +94,13 @@ export function modelCrowd(site: Site, d: Date): number {
   return Math.max(2, Math.min(100, Math.round(v)));
 }
 
-const REPORT_PCT = [0, 12, 32, 55, 75, 95];
+const LEGACY_RATING = [0, 1, 3, 6, 8, 10];
+
+/** Visitor rating 1–10 (10 = packed) → crowd index 5–95. */
+export function ratingPct(r: CrowdReport) {
+  const rating = r.rating ?? LEGACY_RATING[Math.max(1, Math.min(5, r.level ?? 3))];
+  return Math.round(5 + ((Math.max(1, Math.min(10, rating)) - 1) / 9) * 90);
+}
 
 /** Blend model with fresh visitor reports (only when looking at "now"). */
 export function crowdAt(
@@ -115,7 +121,7 @@ export function crowdAt(
     if (ageMin < 0 || ageMin > 120) continue;
     const w = 1 - ageMin / 120; // newer reports count more
     wSum += w;
-    vSum += w * REPORT_PCT[Math.max(1, Math.min(5, r.level))];
+    vSum += w * ratingPct(r);
     n++;
   }
   if (!n) return { pct: model, level: levelOf(model), reports: 0 };

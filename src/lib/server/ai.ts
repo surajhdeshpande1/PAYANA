@@ -2,6 +2,7 @@ import { SAMPLE_ARTISANS } from "../artisans";
 import { LANG_NAME } from "../i18n";
 import { crowdSnapshotText, offlineAnswer, type CrowdSnapshot } from "../offline";
 import { SITES, findSiteInText, getSite } from "../sites";
+import { sbSelect } from "../supabase";
 import type { GuideResponse, Lang } from "../types";
 
 export interface GuideRequest {
@@ -47,9 +48,23 @@ export const aiStatus = () => ({ gemini: Boolean(GEMINI_KEY), groq: Boolean(GROQ
 
 /* ---------------- Grounding knowledge base ---------------- */
 
-let KB_CACHE = "";
+/* Built-in artisan listings the admin removed (refreshed at most once a minute). */
+let HIDDEN: { at: number; keys: string[] } = { at: 0, keys: [] };
+async function refreshHidden() {
+  if (Date.now() - HIDDEN.at < 60_000) return;
+  try {
+    const rows = await sbSelect<{ artisan_key: string }>("removed_artisans", "select=artisan_key");
+    HIDDEN = { at: Date.now(), keys: rows.map((r) => r.artisan_key) };
+  } catch {
+    HIDDEN = { ...HIDDEN, at: Date.now() - 45_000 }; // retry soon
+  }
+}
+const listedArtisans = () => SAMPLE_ARTISANS.filter((a) => !HIDDEN.keys.includes(a.id));
+
+let KB_CACHE = { key: "", text: "" };
 function knowledgeBase() {
-  if (KB_CACHE) return KB_CACHE;
+  const cacheKey = HIDDEN.keys.join(",");
+  if (KB_CACHE.text && KB_CACHE.key === cacheKey) return KB_CACHE.text;
   const sites = SITES.map((s) => {
     const tags = [s.unesco ? "UNESCO World Heritage" : "", s.lesserKnown ? "hidden gem / less crowded" : ""]
       .filter(Boolean)
@@ -68,11 +83,12 @@ function knowledgeBase() {
       .filter(Boolean)
       .join("\n");
   }).join("\n\n");
-  const artisans = SAMPLE_ARTISANS.map(
+  const artisans = listedArtisans().map(
     (a) => `- ${a.name.en}: ${a.craft.en} in ${a.town} (near ${a.nearSite}); ${a.priceHint}`,
   ).join("\n");
-  KB_CACHE = `## HERITAGE SITES\n${sites}\n\n## LOCAL ARTISANS, FOOD & STAYS (listed in the app's Artisans tab)\n${artisans}\n\n## HELPLINES\nEmergency 112 · Ambulance 108 · Women 1091 / 181 · Tourist helpline 1363 (1800-11-1363) · Elderline 14567`;
-  return KB_CACHE;
+  KB_CACHE.key = cacheKey;
+  KB_CACHE.text = `## HERITAGE SITES\n${sites}\n\n## LOCAL ARTISANS, FOOD & STAYS (listed in the app's Artisans tab)\n${artisans}\n\n## HELPLINES\nEmergency 112 · Ambulance 108 · Women 1091 / 181 · Tourist helpline 1363 (1800-11-1363) · Elderline 14567`;
+  return KB_CACHE.text;
 }
 
 /**
@@ -90,7 +106,7 @@ function compactKnowledgeBase(query: string, focusId?: string | null) {
     if (!focus.has(s.id)) return head;
     return `${head}\nFacts:\n${s.facts.map((f) => `- ${f}`).join("\n")}\nVisit: ${s.timings}; entry ${s.entryFee}; best ${s.bestTime}.\nAccessibility: ${s.accessibility.level}, ~${s.accessibility.steps} steps. ${s.accessibility.notes}`;
   }).join("\n");
-  const artisans = SAMPLE_ARTISANS.slice(0, 10)
+  const artisans = listedArtisans().slice(0, 10)
     .map((a) => `- ${a.name.en}: ${a.craft.en}, ${a.town}`)
     .join("\n");
   return `## HERITAGE SITES\n${lines}\n\n## LOCAL ARTISANS & FOOD\n${artisans}\n\n## HELPLINES\nEmergency 112 · Tourist helpline 1363`;
@@ -445,6 +461,7 @@ async function groqModels() {
 /* ---------------- Orchestration ---------------- */
 
 export async function runGuide(req: GuideRequest, force?: "gemini" | "groq"): Promise<GuideResponse> {
+  await refreshHidden();
   const errors: string[] = [];
   if (GEMINI_KEY && force !== "groq") {
     try {
@@ -462,7 +479,7 @@ export async function runGuide(req: GuideRequest, force?: "gemini" | "groq"): Pr
   }
   if (errors.length) console.error("[guide] all providers failed:", errors.join(" | "));
   const lastUser = req.messages.filter((m) => m.role === "user").at(-1)?.text || "";
-  return offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image), audio: Boolean(req.audio) });
+  return offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image), audio: Boolean(req.audio), hidden: HIDDEN.keys });
 }
 
 /* ---------------- Text-to-speech (Gemini TTS) ---------------- */

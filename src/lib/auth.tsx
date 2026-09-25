@@ -29,6 +29,7 @@ interface AuthState {
 }
 
 const KEY = "payana_session_v1";
+export const HAS_ACCOUNT_KEY = "payana_has_account";
 const Ctx = createContext<AuthState | null>(null);
 
 function mapError(e: unknown): AuthError {
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const next = { ...saved!, ...u };
           setSession(next);
           localStorage.setItem(KEY, JSON.stringify(next));
+          localStorage.setItem(HAS_ACCOUNT_KEY, "1");
         } else {
           localStorage.removeItem(KEY); // expired or signed out elsewhere
           setSession(null);
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(s);
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
+      localStorage.setItem(HAS_ACCOUNT_KEY, "1"); // next time, open on "Sign in"
     } catch {}
   };
 

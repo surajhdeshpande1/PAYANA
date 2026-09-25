@@ -2,6 +2,7 @@
 
 import { offlineAnswer, type CrowdSnapshot } from "./offline";
 import { SITES } from "./sites";
+import { cachedRemoved } from "./registrations";
 import type { GuideRequest } from "./server/ai";
 import type { GuideResponse, Site } from "./types";
 
@@ -17,7 +18,7 @@ export function crowdSnapshot(crowd: (s: Site) => { pct: number; level: string }
 export async function askGuide(req: GuideRequest): Promise<GuideResponse> {
   const lastUser = req.messages.filter((m) => m.role === "user").at(-1)?.text || "";
   const fallback = () =>
-    offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image), audio: Boolean(req.audio) });
+    offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image), audio: Boolean(req.audio), hidden: cachedRemoved() });
   if (typeof navigator !== "undefined" && !navigator.onLine) return fallback();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 45000);

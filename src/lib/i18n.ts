@@ -87,6 +87,11 @@ const D: Dict = {
   "crowd.bestTime": ["Best time to visit", "ಭೇಟಿಗೆ ಉತ್ತಮ ಸಮಯ", "जाने का सबसे अच्छा समय"],
   "crowd.forecast": ["Crowd forecast", "ಜನಸಂದಣಿ ಮುನ್ಸೂಚನೆ", "भीड़ का पूर्वानुमान"],
   "crowd.report": ["How crowded is it right now?", "ಈಗ ಎಷ್ಟು ಜನಸಂದಣಿ ಇದೆ?", "अभी कितनी भीड़ है?"],
+  "crowd.scale": ["Rate 1 to 10 — 1 is almost empty, 10 is packed.", "1 ರಿಂದ 10 ರೇಟ್ ಮಾಡಿ — 1 ಬಹುತೇಕ ಖಾಲಿ, 10 ಕಿಕ್ಕಿರಿದು.", "1 से 10 तक रेट करें — 1 लगभग खाली, 10 खचाखच।"],
+  "crowd.rate": ["Crowd rating", "ಜನಸಂದಣಿ ರೇಟಿಂಗ್", "भीड़ रेटिंग"],
+  "crowd.empty": ["almost empty", "ಬಹುತೇಕ ಖಾಲಿ", "लगभग खाली"],
+  "crowd.packedEnd": ["packed", "ಕಿಕ್ಕಿರಿದು", "खचाखच"],
+  "crowd.youRated": ["You rated {r}/10", "ನೀವು {r}/10 ನೀಡಿದ್ದೀರಿ", "आपने {r}/10 दिया"],
   "crowd.reportThanks": ["Thanks! Crowd map updated for everyone.", "ಧನ್ಯವಾದಗಳು! ಎಲ್ಲರಿಗೂ ನಕ್ಷೆ ನವೀಕರಿಸಲಾಗಿದೆ.", "धन्यवाद! सबके लिए भीड़ का नक्शा अपडेट हुआ।"],
   "crowd.model": [
     "Estimated from day, hour, season, holidays & festivals, blended with live visitor reports.",

@@ -22,6 +22,7 @@ import {
 import { useApp } from "@/lib/store";
 import { SAMPLE_ARTISANS } from "@/lib/artisans";
 import { SITES, getSite } from "@/lib/sites";
+import { mapSearchUrl } from "@/lib/location";
 import { LEVEL_COLOR, bestHours, fmtHour, hourlyForecast } from "@/lib/crowd";
 import { sbRpc } from "@/lib/supabase";
 import { localEventCounts } from "@/lib/analytics";
@@ -50,6 +51,9 @@ interface Reg {
   town: string;
   phone: string | null;
   description: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
 }
@@ -472,8 +476,20 @@ export default function AdminPage() {
                     <div className="min-w-0">
                       <p className="font-semibold">{r.name}</p>
                       <p className="text-xs text-muted">
-                        {r.craft} · {r.town} · {r.phone ?? "no phone"}
+                        {r.craft} · {r.phone ?? "no phone"}
                       </p>
+                      <p className="mt-1 text-xs text-sand">
+                        📍 {r.address ? `${r.address}, ${r.town}` : r.town}
+                        {r.lat != null && r.lng != null && <span className="ml-1 text-teal">· GPS pinned</span>}
+                      </p>
+                      <a
+                        href={mapSearchUrl({ lat: r.lat, lng: r.lng, address: r.address, town: r.town })}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-semibold text-gold underline"
+                      >
+                        View on Google Maps ↗
+                      </a>
                       {r.description && <p className="mt-1 text-xs text-sand">{r.description}</p>}
                     </div>
                     <span

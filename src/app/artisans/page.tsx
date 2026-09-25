@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, HandHeart, MapPin, MessageCircle, Navigation, Phone, Store } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { SAMPLE_ARTISANS, TOWN_COORDS } from "@/lib/artisans";
+import { SAMPLE_ARTISANS } from "@/lib/artisans";
 import { getSite, mapsDirUrl, photo } from "@/lib/sites";
+import { directionsUrl } from "@/lib/location";
 import { sbSelect } from "@/lib/supabase";
 import { flushPendingRegistrations } from "@/lib/registrations";
 import { track } from "@/lib/analytics";
@@ -31,6 +32,9 @@ interface Row {
   town: string;
   phone: string | null;
   description: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 function waLink(phone: string, text: string) {
@@ -47,11 +51,10 @@ export default function ArtisansPage() {
 
   useEffect(() => {
     flushPendingRegistrations();
-    sbSelect<Row>("artisans", "select=id,name,craft,category,town,phone,description&status=eq.approved&order=created_at.desc&limit=50")
+    sbSelect<Row>("artisans", "select=id,name,craft,category,town,phone,description,address,lat,lng&status=eq.approved&order=created_at.desc&limit=50")
       .then((rows) =>
         setLive(
           rows.map((r) => {
-            const c = TOWN_COORDS[r.town.trim().toLowerCase()] ?? TOWN_COORDS.badami;
             const same = (s: string) => ({ en: s, kn: s, hi: s });
             return {
               id: `reg-${r.id}`,
@@ -61,8 +64,11 @@ export default function ArtisansPage() {
               category: r.category,
               town: r.town,
               nearSite: "",
-              lat: c.lat,
-              lng: c.lng,
+              // Exact GPS pin if the artisan captured one; otherwise 0 and we route by address.
+              lat: r.lat ?? 0,
+              lng: r.lng ?? 0,
+              address: r.address,
+              pinned: r.lat != null && r.lng != null,
               priceHint: "",
               languages: [],
               image: CAT_IMAGE[r.category] ?? "crafts/handloom",
@@ -151,7 +157,7 @@ export default function ArtisansPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-gold">{a.craft[lang]}</p>
                 <h3 className="text-lg font-semibold leading-snug">{a.name[lang]}</h3>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-                  <MapPin size={12} /> {a.town}
+                  <MapPin size={12} /> {a.address ? `${a.address}, ${a.town}` : a.town}
                   {near && ` · ${t("art.near")} ${near.name[lang]}`}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-sand">{a.description[lang]}</p>
@@ -178,7 +184,7 @@ export default function ArtisansPage() {
                     <MessageCircle size={15} /> {t("art.whatsapp")}
                   </a>
                   <a
-                    href={mapsDirUrl(a.lat, a.lng)}
+                    href={a.registered ? directionsUrl({ lat: a.pinned ? a.lat : null, lng: a.pinned ? a.lng : null, address: a.address, town: a.town }) : mapsDirUrl(a.lat, a.lng)}
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => contact(a, "directions")}

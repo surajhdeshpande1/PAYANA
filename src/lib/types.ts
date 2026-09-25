@@ -60,6 +60,8 @@ export interface Artisan {
   image: string;
   phone?: string | null;
   registered?: boolean; // came from live self-registration (Supabase)
+  address?: string | null; // as typed by the artisan
+  pinned?: boolean; // lat/lng captured by GPS at the shop
 }
 
 export interface CrowdReport {

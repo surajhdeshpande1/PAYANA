@@ -1,0 +1,41 @@
+{
+  "sites/agastya-lake": {
+    "src": "/images/sites/agastya-lake.jpg"
+  },
+  "sites/aihole": {
+    "src": "/images/sites/aihole.jpg"
+  },
+  "sites/badami-caves-2": {
+    "src": "/images/sites/badami-caves-2.jpg"
+  },
+  "sites/badami-caves": {
+    "src": "/images/sites/badami-caves.jpg"
+  },
+  "sites/badami-fort": {
+    "src": "/images/sites/badami-fort.jpg"
+  },
+  "sites/banashankari": {
+    "src": "/images/sites/banashankari.jpg"
+  },
+  "sites/bhutanatha": {
+    "src": "/images/sites/bhutanatha.jpg"
+  },
+  "sites/kudalasangama": {
+    "src": "/images/sites/kudalasangama.jpg"
+  },
+  "sites/mahakuta": {
+    "src": "/images/sites/mahakuta.jpg"
+  },
+  "sites/pattadakal-2": {
+    "src": "/images/sites/pattadakal-2.jpg"
+  },
+  "sites/pattadakal": {
+    "src": "/images/sites/pattadakal.jpg"
+  },
+  "sites/siddhanakolla": {
+    "src": "/images/sites/siddhanakolla.jpg"
+  },
+  "hero": {
+    "src": "/images/hero.jpg"
+  }
+}

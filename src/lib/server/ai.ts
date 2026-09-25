@@ -164,7 +164,8 @@ async function withTimeout<T>(ms: number, fn: (signal: AbortSignal) => Promise<T
 /* ---------------- Gemini ---------------- */
 
 async function callGemini(req: GuideRequest): Promise<GuideResponse> {
-  const history = req.messages.slice(-7, -1);
+  // Voice questions are standalone: prior text turns made the model answer the old question.
+  const history = req.mode === "voice" ? [] : req.messages.slice(-7, -1);
   const lastUser = req.messages.filter((m) => m.role === "user").at(-1)?.text || "";
   const contents: { role: string; parts: Record<string, unknown>[] }[] = [];
   for (const m of history) {

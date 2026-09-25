@@ -6,33 +6,52 @@ import type { Lang } from "./types";
 
 /**
  * Speaks answers aloud. Uses the phone's built-in voice when it has one for the
- * language (free, instant, offline). Falls back to Gemini TTS via /api/tts when the
- * device lacks e.g. a Kannada voice.
+ * language (free, instant, offline); otherwise Gemini TTS via /api/tts.
+ * Speech is queued sentence by sentence so pause/resume works on every phone
+ * (speechSynthesis.pause() is unreliable on Android).
  */
 
-let current: string | null = null;
+export interface NowPlaying {
+  id: string;
+  title?: string;
+  href?: string;
+  status: "loading" | "playing" | "paused";
+}
+
+let np: NowPlaying | null = null;
 const listeners = new Set<() => void>();
 let sharedAudio: HTMLAudioElement | null = null;
 let unlocked = false;
 
-function emit(id: string | null) {
-  current = id;
+let mode: "device" | "cloud" = "device";
+let queue: string[] = [];
+let qIndex = 0;
+let qVoice: SpeechSynthesisVoice | null = null;
+let qRate = 1;
+let playToken = 0; // invalidates callbacks from an earlier/paused playback
+
+function set(next: NowPlaying | null) {
+  np = next;
   listeners.forEach((l) => l());
 }
 
-export function useSpeaking() {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    () => current,
-    () => null,
-  );
+const subscribe = (cb: () => void) => {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+};
+
+export function useNowPlaying() {
+  return useSyncExternalStore(subscribe, () => np, () => null);
 }
 
-const SILENT =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+/** Id of the item currently loading/playing/paused (for Listen buttons). */
+export function useSpeaking() {
+  return useNowPlaying()?.id ?? null;
+}
+
+const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
 
 /** Call once from a user gesture so later async playback is allowed (iOS/Android). */
 export function unlockAudio() {
@@ -94,7 +113,30 @@ function chunks(text: string) {
   return out;
 }
 
+function speakChunk(token: number) {
+  if (token !== playToken || np?.status !== "playing") return;
+  if (qIndex >= queue.length) return set(null);
+  const u = new SpeechSynthesisUtterance(queue[qIndex]);
+  if (qVoice) {
+    u.voice = qVoice;
+    u.lang = qVoice.lang;
+  }
+  u.rate = qRate;
+  u.onend = () => {
+    if (token !== playToken || np?.status !== "playing") return;
+    qIndex++;
+    speakChunk(token);
+  };
+  u.onerror = (e) => {
+    if (token !== playToken || e.error === "interrupted" || e.error === "canceled") return;
+    qIndex++;
+    speakChunk(token);
+  };
+  window.speechSynthesis.speak(u);
+}
+
 export function stopSpeaking() {
+  playToken++;
   try {
     window.speechSynthesis?.cancel();
   } catch {}
@@ -102,10 +144,33 @@ export function stopSpeaking() {
     sharedAudio.pause();
     sharedAudio.onended = null;
   }
-  emit(null);
+  set(null);
 }
 
-async function speakCloud(id: string, text: string, lang: Lang) {
+export function pauseSpeaking() {
+  if (!np || np.status !== "playing") return;
+  if (mode === "device") {
+    playToken++; // current sentence is replayed from its start on resume
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
+  } else {
+    sharedAudio?.pause();
+  }
+  set({ ...np, status: "paused" });
+}
+
+export function resumeSpeaking() {
+  if (!np || np.status !== "paused") return;
+  set({ ...np, status: "playing" });
+  if (mode === "device") {
+    speakChunk(++playToken);
+  } else {
+    sharedAudio?.play().catch(() => set(null));
+  }
+}
+
+async function speakCloud(token: number, text: string, lang: Lang) {
   const res = await fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -113,41 +178,44 @@ async function speakCloud(id: string, text: string, lang: Lang) {
   });
   if (!res.ok) throw new Error("tts unavailable");
   const blob = await res.blob();
-  if (current !== id) return;
+  if (token !== playToken) return;
   const a = sharedAudio ?? new Audio();
   sharedAudio = a;
   a.src = URL.createObjectURL(blob);
-  a.onended = () => current === id && emit(null);
+  a.onended = () => token === playToken && set(null);
   await a.play();
+  if (token === playToken && np) set({ ...np, status: "playing" });
 }
 
-export async function speak(id: string, text: string, lang: Lang): Promise<"device" | "cloud" | "none"> {
+export async function speak(
+  id: string,
+  text: string,
+  lang: Lang,
+  meta: { title?: string; href?: string } = {},
+): Promise<"device" | "cloud" | "none"> {
   stopSpeaking();
-  emit(id);
+  const token = ++playToken;
+  set({ id, title: meta.title, href: meta.href, status: "loading" });
   const body = clean(text);
-  const code = speechLang(lang);
-  const voices = await getVoices();
-  const voice = pickVoice(voices, code);
+  const voice = pickVoice(await getVoices(), speechLang(lang));
+  if (token !== playToken) return "none";
 
   if (voice) {
-    const synth = window.speechSynthesis;
-    const parts = chunks(body);
-    parts.forEach((p, i) => {
-      const u = new SpeechSynthesisUtterance(p);
-      u.voice = voice;
-      u.lang = voice.lang;
-      u.rate = lang === "en" ? 1 : 0.95;
-      if (i === parts.length - 1) u.onend = () => current === id && emit(null);
-      u.onerror = () => current === id && i === parts.length - 1 && emit(null);
-      synth.speak(u);
-    });
+    mode = "device";
+    queue = chunks(body);
+    qIndex = 0;
+    qVoice = voice;
+    qRate = lang === "en" ? 1 : 0.95;
+    set({ id, title: meta.title, href: meta.href, status: "playing" });
+    speakChunk(token);
     return "device";
   }
   try {
-    await speakCloud(id, body, lang);
+    mode = "cloud";
+    await speakCloud(token, body, lang);
     return "cloud";
   } catch {
-    emit(null);
+    if (token === playToken) set(null);
     return "none";
   }
 }

@@ -56,6 +56,7 @@ interface Reg {
   phone: string | null;
   description: string | null;
   address: string | null;
+  photo_url: string | null;
   lat: number | null;
   lng: number | null;
   status: "pending" | "approved" | "rejected";
@@ -480,6 +481,7 @@ export default function AdminPage() {
                 <li key={r.id} className="rounded-xl bg-maroon-900/70 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
+                      {r.photo_url && <img src={r.photo_url} alt="" className="mb-2 h-24 w-full rounded-lg object-cover" />}
                       <p className="font-semibold">{r.name}</p>
                       <p className="text-xs text-muted">
                         {r.craft} · {r.phone ?? "no phone"}

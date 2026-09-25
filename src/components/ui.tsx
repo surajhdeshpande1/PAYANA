@@ -262,7 +262,19 @@ export function SiteCard({ site, wide = false }: { site: Site; wide?: boolean })
 }
 
 /* ---------- Speak / listen button ---------- */
-export function SpeakButton({ id, text, className = "" }: { id: string; text: string; className?: string }) {
+export function SpeakButton({
+  id,
+  text,
+  title,
+  href,
+  className = "",
+}: {
+  id: string;
+  text: string;
+  title?: string;
+  href?: string;
+  className?: string;
+}) {
   const { lang, t, toast } = useApp();
   const speaking = useSpeaking();
   const active = speaking === id;
@@ -270,7 +282,7 @@ export function SpeakButton({ id, text, className = "" }: { id: string; text: st
     <button
       onClick={async () => {
         if (active) return stopSpeaking();
-        const r = await speak(id, text, lang);
+        const r = await speak(id, text, lang, { title, href });
         if (r === "none") toast(lang === "kn" ? "ಈ ಫೋನ್‌ನಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ." : "Voice not available on this device.");
       }}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${

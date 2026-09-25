@@ -62,6 +62,7 @@ export interface Artisan {
   registered?: boolean; // came from live self-registration (Supabase)
   address?: string | null; // as typed by the artisan
   pinned?: boolean; // lat/lng captured by GPS at the shop
+  photoUrl?: string | null; // photo uploaded by the artisan
 }
 
 export interface CrowdReport {

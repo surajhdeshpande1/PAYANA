@@ -9,6 +9,7 @@ import BottomNav from "./BottomNav";
 import FloatingMic from "./FloatingMic";
 import LanguagePicker from "./LanguagePicker";
 import DemoTour from "./DemoTour";
+import MiniPlayer from "./MiniPlayer";
 import AuthScreen from "./AuthScreen";
 import { useAuth } from "@/lib/auth";
 
@@ -51,6 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <FloatingMic />
       <BottomNav />
       <DemoTour />
+      <MiniPlayer />
       <div className="pointer-events-none fixed inset-x-0 top-3 z-[70] mx-auto flex max-w-md flex-col items-center gap-2 px-4">
         {toasts.map((x) => (
           <div key={x.id} className="fade-up card pointer-events-auto w-full px-4 py-3 text-sm text-cream shadow-xl">

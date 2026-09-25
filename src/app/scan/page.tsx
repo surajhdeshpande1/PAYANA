@@ -57,7 +57,8 @@ export default function ScanPage() {
       setResult(res);
       setPhase("result");
       track("scan", { siteId: res.siteId, lang, meta: { provider: res.provider, confidence: res.confidence ?? null } });
-      if (res.siteId) speak("scan-result", res.answer, lang);
+      const rs = getSite(res.siteId);
+      if (rs) speak("scan-result", res.answer, lang, { title: rs.name[lang], href: `/site/${rs.id}` });
     } catch {
       toast(t("scan.error"));
       setPhase("idle");
@@ -162,7 +163,7 @@ export default function ScanPage() {
               <div className="card p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="font-serif text-xl font-semibold text-gold-light">{site.name[lang]}</h2>
-                  <SpeakButton id="scan-result" text={result.answer} />
+                  <SpeakButton id="scan-result" text={result.answer} title={site.name[lang]} href={`/site/${site.id}`} />
                 </div>
                 <p className="whitespace-pre-line text-[15px] leading-relaxed text-cream/95">{result.answer}</p>
                 <p className="mt-3 flex items-center gap-1 text-[10px] text-muted">
@@ -191,7 +192,7 @@ export default function ScanPage() {
                       className="chip"
                       onClick={() => {
                         setResult({ answer: s.story[lang], siteId: s.id, confidence: 1, provider: "offline" });
-                        speak("scan-result", s.story[lang], lang);
+                        speak("scan-result", s.story[lang], lang, { title: s.name[lang], href: `/site/${s.id}` });
                       }}
                     >
                       {s.name[lang]}

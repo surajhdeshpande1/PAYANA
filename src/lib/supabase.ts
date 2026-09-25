@@ -50,3 +50,22 @@ export function sbSelect<T = unknown>(table: string, query: string): Promise<T[]
 export function sbRpc<T = unknown>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
   return sb(`rpc/${fn}`, { method: "POST", body: JSON.stringify(args) }) as Promise<T>;
 }
+
+/** Upload an artisan photo to the public 'artisan-photos' bucket; returns its public URL. */
+export async function sbUploadArtisanPhoto(photo: Blob): Promise<string> {
+  const name = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const res = await fetch(`${SB_URL}/storage/v1/object/artisan-photos/${name}`, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { apikey: SB_KEY, "Content-Type": "image/jpeg" },
+      body: photo,
+    });
+    if (!res.ok) throw new Error(`upload ${res.status}`);
+    return `${SB_URL}/storage/v1/object/public/artisan-photos/${name}`;
+  } finally {
+    clearTimeout(timer);
+  }
+}

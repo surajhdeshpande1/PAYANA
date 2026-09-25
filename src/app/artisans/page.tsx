@@ -7,36 +7,13 @@ import { useApp } from "@/lib/store";
 import { SAMPLE_ARTISANS } from "@/lib/artisans";
 import { getSite, mapsDirUrl, photo } from "@/lib/sites";
 import { directionsUrl } from "@/lib/location";
-import { sbSelect } from "@/lib/supabase";
-import { flushPendingRegistrations } from "@/lib/registrations";
+import { fetchApprovedArtisans, flushPendingRegistrations } from "@/lib/registrations";
 import { track } from "@/lib/analytics";
 import { DEMO_STEPS } from "@/lib/demo";
 import { TopBar } from "@/components/ui";
 import type { Artisan, ArtisanCategory } from "@/lib/types";
 
 const CATS: (ArtisanCategory | "all")[] = ["all", "weaving", "food", "homestay", "crafts", "guide"];
-const CAT_IMAGE: Record<ArtisanCategory, string> = {
-  weaving: "crafts/handloom",
-  food: "crafts/jolada-rotti",
-  homestay: "crafts/homestay",
-  crafts: "crafts/lambani",
-  guide: "sites/aihole",
-  other: "crafts/handloom",
-};
-
-interface Row {
-  id: string;
-  name: string;
-  craft: string;
-  category: ArtisanCategory;
-  town: string;
-  phone: string | null;
-  description: string | null;
-  address: string | null;
-  lat: number | null;
-  lng: number | null;
-}
-
 function waLink(phone: string, text: string) {
   let d = phone.replace(/\D/g, "");
   if (d.length === 10) d = `91${d}`;
@@ -51,33 +28,8 @@ export default function ArtisansPage() {
 
   useEffect(() => {
     flushPendingRegistrations();
-    sbSelect<Row>("artisans", "select=id,name,craft,category,town,phone,description,address,lat,lng&status=eq.approved&order=created_at.desc&limit=50")
-      .then((rows) =>
-        setLive(
-          rows.map((r) => {
-            const same = (s: string) => ({ en: s, kn: s, hi: s });
-            return {
-              id: `reg-${r.id}`,
-              name: same(r.name),
-              craft: same(r.craft),
-              description: same(r.description || r.craft),
-              category: r.category,
-              town: r.town,
-              nearSite: "",
-              // Exact GPS pin if the artisan captured one; otherwise 0 and we route by address.
-              lat: r.lat ?? 0,
-              lng: r.lng ?? 0,
-              address: r.address,
-              pinned: r.lat != null && r.lng != null,
-              priceHint: "",
-              languages: [],
-              image: CAT_IMAGE[r.category] ?? "crafts/handloom",
-              phone: r.phone,
-              registered: true,
-            } satisfies Artisan;
-          }),
-        ),
-      )
+    fetchApprovedArtisans()
+      .then(setLive)
       .catch(() => {});
   }, []);
 
@@ -137,7 +89,7 @@ export default function ArtisansPage() {
               className={`card scroll-mt-20 overflow-hidden ${demo && i === 0 ? "ring-2 ring-teal" : ""}`}
             >
               <div className="relative h-36">
-                <img src={photo(a.image).src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                <img src={a.photoUrl || photo(a.image).src} alt={a.name.en} loading="lazy" className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-linear-to-t from-maroon-900 to-transparent" />
                 <span
                   className={`absolute left-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${

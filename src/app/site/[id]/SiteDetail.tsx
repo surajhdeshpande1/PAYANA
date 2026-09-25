@@ -111,7 +111,7 @@ export default function SiteDetail({ id }: { id: string }) {
         <div className="card p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="section-title">{t("site.story")}</h2>
-            <SpeakButton id={`story-${site.id}`} text={site.story[lang]} />
+            <SpeakButton id={`story-${site.id}`} text={site.story[lang]} title={site.name[lang]} href={`/site/${site.id}`} />
           </div>
           <p className="text-[15px] leading-relaxed text-cream/95">{site.story[lang]}</p>
         </div>

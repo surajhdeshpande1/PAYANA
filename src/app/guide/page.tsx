@@ -79,7 +79,12 @@ export default function GuidePage() {
     };
     setMessages((m) => [...m, msg]);
     if (res.siteId) setSiteId(res.siteId);
-    if (autoSpeak) speak(`msg-${Date.now()}`, res.answer, lang);
+    const about = getSite(res.siteId);
+    if (autoSpeak)
+      speak(`msg-${Date.now()}`, res.answer, lang, {
+        title: about ? about.name[lang] : t("guide.title"),
+        href: about ? `/site/${about.id}` : "/guide",
+      });
   };
 
   async function sendText(text: string) {
@@ -243,7 +248,12 @@ export default function GuidePage() {
               <div className="card max-w-[85%] rounded-tl-sm px-4 py-3">
                 <p className="whitespace-pre-line text-sm leading-relaxed">{m.text}</p>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <SpeakButton id={`m${i}`} text={m.text} />
+                  <SpeakButton
+                    id={`m${i}`}
+                    text={m.text}
+                    title={m.siteId ? getSite(m.siteId)?.name[lang] : t("guide.title")}
+                    href={m.siteId ? `/site/${m.siteId}` : "/guide"}
+                  />
                   {m.siteId && (
                     <Link href={`/site/${m.siteId}`} className="rounded-full border border-teal/50 px-3 py-1.5 text-xs font-semibold text-teal">
                       {getSite(m.siteId)?.name[lang]} →

@@ -3,16 +3,22 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { crowdAt, nextSundayNoon, type CrowdLevel } from "./crowd";
 import { translate } from "./i18n";
-import { sbInsert, sbSelect } from "./supabase";
+import { sbInsert, sbRpc, sbSelect } from "./supabase";
 import { track } from "./analytics";
+import { useAuth } from "./auth";
 import type { CrowdReport, Lang, Site } from "./types";
 
 type TimeMode = "live" | "sunday";
 
+/** Device-wide preferences. */
 interface Persisted {
   lang: Lang;
   langChosen: boolean;
   a11y: boolean;
+}
+
+/** Heritage Passport — belongs to the signed-in account (synced to Supabase). */
+interface Passport {
   stamps: Record<string, number>;
   artisanContacted: boolean;
   crowdReported: boolean;
@@ -23,7 +29,7 @@ interface Toast {
   text: string;
 }
 
-interface AppState extends Persisted {
+interface AppState extends Persisted, Passport {
   ready: boolean;
   setLang: (l: Lang) => void;
   setA11y: (v: boolean) => void;
@@ -37,6 +43,7 @@ interface AppState extends Persisted {
   crowd: (site: Site, at?: Date) => { pct: number; level: CrowdLevel; reports: number };
   stamp: (siteId: string) => boolean;
   markArtisanContacted: () => void;
+  resetPassport: () => Promise<void>;
   online: boolean;
   toast: (text: string) => void;
   toasts: Toast[];
@@ -44,22 +51,22 @@ interface AppState extends Persisted {
   setDemoStep: (s: number | null) => void;
 }
 
-const DEFAULTS: Persisted = {
-  lang: "en",
-  langChosen: false,
-  a11y: false,
-  stamps: {},
-  artisanContacted: false,
-  crowdReported: false,
-};
+const DEFAULTS: Persisted = { lang: "en", langChosen: false, a11y: false };
+const EMPTY_PASSPORT: Passport = { stamps: {}, artisanContacted: false, crowdReported: false };
 
 const KEY = "payana_state_v1";
+const PASSPORT_KEY = (email: string) => `payana_passport_v1:${email.toLowerCase()}`;
 const PENDING_KEY = "payana_pending_reports";
 
 const Ctx = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const { user, token } = useAuth();
   const [p, setP] = useState<Persisted>(DEFAULTS);
+  // The passport is tagged with the account it belongs to, so switching accounts never mixes stamps.
+  const [pp, setPP] = useState<{ owner: string | null; data: Passport }>({ owner: null, data: EMPTY_PASSPORT });
+  const passport = pp.data;
+  const setPassport = useCallback((fn: (d: Passport) => Passport) => setPP((cur) => ({ ...cur, data: fn(cur.data) })), []);
   const [ready, setReady] = useState(false);
   const [timeMode, setTimeMode] = useState<TimeMode>("live");
   const [realNow, setRealNow] = useState(() => new Date());
@@ -68,12 +75,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [demoStep, setDemoStepState] = useState<number | null>(null);
   const toastId = useRef(0);
+  const email = user?.email ?? null;
 
-  // Load persisted state after mount (avoids hydration mismatch).
+  // Load persisted preferences after mount (avoids hydration mismatch).
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setP({ ...DEFAULTS, ...JSON.parse(raw) });
+      if (raw) {
+        const saved = JSON.parse(raw);
+        setP({ lang: saved.lang ?? DEFAULTS.lang, langChosen: Boolean(saved.langChosen), a11y: Boolean(saved.a11y) });
+      }
       const d = sessionStorage.getItem("payana_demo");
       if (d) setDemoStepState(Number(d));
       const tm = sessionStorage.getItem("payana_time");
@@ -94,11 +105,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify(p));
+      localStorage.setItem(KEY, JSON.stringify(p)); // passport is no longer stored device-wide
     } catch {}
     document.documentElement.lang = p.lang;
     document.documentElement.classList.toggle("a11y", p.a11y);
   }, [p, ready]);
+
+  // Each account gets its own passport: show this account's cached copy at once,
+  // then replace it with the copy saved in the database. New accounts start empty.
+  useEffect(() => {
+    if (!email || !token) {
+      setPP({ owner: null, data: EMPTY_PASSPORT });
+      return;
+    }
+    let cachedData = EMPTY_PASSPORT;
+    try {
+      const cached = localStorage.getItem(PASSPORT_KEY(email));
+      if (cached) cachedData = { ...EMPTY_PASSPORT, ...JSON.parse(cached) };
+    } catch {}
+    setPP({ owner: email, data: cachedData });
+    let cancelled = false;
+    sbRpc<{ stamps: Record<string, number>; artisan: boolean; crowd: boolean }>("app_passport_get", { p_token: token })
+      .then((r) => {
+        if (cancelled || !r) return;
+        const data = { stamps: r.stamps || {}, artisanContacted: Boolean(r.artisan), crowdReported: Boolean(r.crowd) };
+        setPP((cur) => (cur.owner === email ? { owner: email, data } : cur));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [email, token]);
+
+  useEffect(() => {
+    if (!email || pp.owner !== email) return; // only save a passport under its own account
+    try {
+      localStorage.setItem(PASSPORT_KEY(email), JSON.stringify(pp.data));
+    } catch {}
+  }, [pp, email]);
 
   useEffect(() => {
     try {
@@ -176,11 +220,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [p.lang],
   );
 
+  const flag = useCallback(
+    (f: "artisan" | "crowd") => {
+      if (token) sbRpc("app_passport_flag", { p_token: token, p_flag: f }).catch(() => {});
+    },
+    [token],
+  );
+
   const reportCrowd = useCallback(
     (siteId: string, level: number) => {
       const r: CrowdReport = { site_id: siteId, level, created_at: new Date().toISOString() };
       setReports((rs) => [r, ...rs]);
-      setP((s) => ({ ...s, crowdReported: true }));
+      setPassport((s) => ({ ...s, crowdReported: true }));
+      flag("crowd");
       track("crowd_report", { siteId, lang: p.lang, meta: { level } });
       sbInsert("crowd_reports", { site_id: siteId, level }).catch(() => {
         try {
@@ -190,7 +242,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } catch {}
       });
     },
-    [p.lang],
+    [p.lang, flag, setPassport],
   );
 
   const crowd = useCallback(
@@ -200,17 +252,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const stamp = useCallback(
     (siteId: string) => {
-      let added = false;
-      setP((s) => {
-        if (s.stamps[siteId]) return s;
-        added = true;
-        return { ...s, stamps: { ...s.stamps, [siteId]: Date.now() } };
-      });
-      if (!p.stamps[siteId]) track("stamp", { siteId, lang: p.lang });
-      return added || !p.stamps[siteId];
+      if (passport.stamps[siteId]) return false;
+      setPassport((s) => (s.stamps[siteId] ? s : { ...s, stamps: { ...s.stamps, [siteId]: Date.now() } }));
+      track("stamp", { siteId, lang: p.lang });
+      if (token) sbRpc("app_passport_stamp", { p_token: token, p_site: siteId }).catch(() => {});
+      return true;
     },
-    [p.lang, p.stamps],
+    [p.lang, passport.stamps, token, setPassport],
   );
+
+  const markArtisanContacted = useCallback(() => {
+    setPassport((s) => (s.artisanContacted ? s : { ...s, artisanContacted: true }));
+    if (!passport.artisanContacted) flag("artisan");
+  }, [passport.artisanContacted, flag, setPassport]);
+
+  const resetPassport = useCallback(async () => {
+    setPassport(() => EMPTY_PASSPORT);
+    if (token) await sbRpc("app_passport_reset", { p_token: token }).catch(() => {});
+  }, [token]);
 
   const setDemoStep = useCallback((s: number | null) => {
     setDemoStepState(s);
@@ -222,6 +281,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: AppState = {
     ...p,
+    ...passport,
     ready,
     setLang: (l) => setP((s) => ({ ...s, lang: l, langChosen: true })),
     setA11y: (v) => setP((s) => ({ ...s, a11y: v })),
@@ -234,7 +294,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     reportCrowd,
     crowd,
     stamp,
-    markArtisanContacted: () => setP((s) => ({ ...s, artisanContacted: true })),
+    markArtisanContacted,
+    resetPassport,
     online,
     toast,
     toasts,

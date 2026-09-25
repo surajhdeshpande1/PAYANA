@@ -46,11 +46,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${cormorant.variable} ${outfit.variable} ${kannada.variable} ${deva.variable}`}>
       <body className="antialiased">
-        <AppProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <AppProvider>
             <AppShell>{children}</AppShell>
-          </AuthProvider>
-        </AppProvider>
+          </AppProvider>
+        </AuthProvider>
       </body>
     </html>
   );

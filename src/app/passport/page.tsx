@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { Gem, Lock, Share2 } from "lucide-react";
+import { useState } from "react";
+import { Check, Gem, Lock, RotateCcw, Share2 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { SITES, sitePhoto } from "@/lib/sites";
 import { TOTAL_SITES, badges, passportPoints } from "@/lib/passport";
 import { TopBar } from "@/components/ui";
 
 export default function PassportPage() {
-  const { t, lang, stamps, artisanContacted, crowdReported } = useApp();
+  const { t, lang, stamps, artisanContacted, crowdReported, resetPassport, toast } = useApp();
+  const { user } = useAuth();
+  const [confirming, setConfirming] = useState(false);
   const points = passportPoints(stamps);
   const count = Object.keys(stamps).length;
   const bs = badges(stamps, { artisanContacted, crowdReported });
@@ -34,7 +38,12 @@ export default function PassportPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gold/80">Bagalkote · ಬಾಗಲಕೋಟೆ</p>
           <h2 className="gold-text font-display text-3xl tracking-wider">HERITAGE PASSPORT</h2>
           <p className="font-serif text-sm italic text-sand">ಪರಂಪರೆ ಪಾಸ್‌ಪೋರ್ಟ್ · विरासत पासपोर्ट</p>
-          <div className="mt-5 flex items-end gap-6">
+          {user && (
+            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-muted">
+              {t("pass.holder")} · <span className="font-semibold normal-case tracking-normal text-cream">{user.name}</span>
+            </p>
+          )}
+          <div className="mt-4 flex items-end gap-6">
             <div>
               <p className="font-display text-5xl text-cream">{points}</p>
               <p className="text-xs text-muted">{t("pass.points")}</p>
@@ -58,6 +67,41 @@ export default function PassportPage() {
           </p>
         </div>
         <p className="mt-3 text-xs text-muted">{t("pass.howTo")}</p>
+        {user && (
+          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-teal">
+            <Check size={12} /> {t("pass.saved")}
+          </p>
+        )}
+
+        {/* Reset: two-step confirm so it can't happen by accident */}
+        {confirming ? (
+          <div className="card mt-4 p-4">
+            <p className="text-sm text-cream">{t("pass.resetConfirm")}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button onClick={() => setConfirming(false)} className="btn-ghost py-2.5 text-sm">
+                {t("close")}
+              </button>
+              <button
+                onClick={async () => {
+                  setConfirming(false);
+                  await resetPassport();
+                  toast(t("pass.resetDone"));
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-packed px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                <RotateCcw size={15} /> {t("pass.resetYes")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            disabled={count === 0 && !artisanContacted && !crowdReported}
+            className="btn-ghost mt-4 w-full py-2.5 text-sm"
+          >
+            <RotateCcw size={15} /> {t("pass.reset")}
+          </button>
+        )}
       </section>
 
       <section className="mt-5 px-4">

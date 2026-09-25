@@ -22,6 +22,7 @@ type AuthError = "invalid" | "taken" | "short" | "email" | "name" | "network";
 interface AuthState {
   ready: boolean;
   user: AppUser | null;
+  token: string | null;
   signUp: (name: string, email: string, password: string) => Promise<AuthError | null>;
   signIn: (email: string, password: string) => Promise<AuthError | null>;
   signOut: () => Promise<void>;
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   const user = session ? { name: session.name, email: session.email } : null;
-  return <Ctx.Provider value={{ ready, user, signUp, signIn, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ ready, user, token: session?.token ?? null, signUp, signIn, signOut }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

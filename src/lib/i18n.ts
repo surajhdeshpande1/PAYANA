@@ -290,6 +290,12 @@ const D: Dict = {
   "pass.points": ["points", "ಅಂಕಗಳು", "अंक"],
   "pass.stamps": ["stamps", "ಮುದ್ರೆಗಳು", "मुहरें"],
   "pass.hint": ["Hidden gems earn double points!", "ಅಡಗಿದ ರತ್ನಗಳಿಗೆ ದುಪ್ಪಟ್ಟು ಅಂಕ!", "छिपे रत्नों पर दोगुने अंक!"],
+  "pass.reset": ["Reset passport", "ಪಾಸ್‌ಪೋರ್ಟ್ ಮರುಹೊಂದಿಸಿ", "पासपोर्ट रीसेट करें"],
+  "pass.resetConfirm": ["Clear all stamps, points and badges and start again?", "ಎಲ್ಲಾ ಮುದ್ರೆ, ಅಂಕ ಮತ್ತು ಬ್ಯಾಡ್ಜ್‌ಗಳನ್ನು ಅಳಿಸಿ ಮತ್ತೆ ಆರಂಭಿಸಬೇಕೇ?", "सभी मुहरें, अंक और बैज मिटाकर फिर से शुरू करें?"],
+  "pass.resetYes": ["Yes, reset", "ಹೌದು, ಮರುಹೊಂದಿಸಿ", "हाँ, रीसेट करें"],
+  "pass.resetDone": ["Passport reset — your journey starts fresh!", "ಪಾಸ್‌ಪೋರ್ಟ್ ಮರುಹೊಂದಿಸಲಾಗಿದೆ — ಹೊಸ ಪಯಣ ಆರಂಭ!", "पासपोर्ट रीसेट — आपकी यात्रा नए सिरे से शुरू!"],
+  "pass.holder": ["Passport holder", "ಪಾಸ್‌ಪೋರ್ಟ್ ಧಾರಕ", "पासपोर्ट धारक"],
+  "pass.saved": ["Saved to your account", "ನಿಮ್ಮ ಖಾತೆಗೆ ಉಳಿಸಲಾಗಿದೆ", "आपके खाते में सहेजा गया"],
   "pass.badges": ["Badges", "ಬ್ಯಾಡ್ಜ್‌ಗಳು", "बैज"],
   "pass.share": ["Share my passport", "ನನ್ನ ಪಾಸ್‌ಪೋರ್ಟ್ ಹಂಚಿಕೊಳ್ಳಿ", "मेरा पासपोर्ट शेयर करें"],
   "pass.howTo": [

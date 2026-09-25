@@ -19,7 +19,7 @@ const env = (...names: string[]) => names.map((n) => process.env[n]?.trim()).fin
 const GEMINI_KEY = env("GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI", "gemini", "Gemini");
 const GROQ_KEY = env("GROQ_API_KEY", "GROQ", "groq", "Groq", "grok", "GROK");
 const GEMINI_MODELS = (
-  process.env.GEMINI_MODELS || "gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite,gemini-2.0-flash"
+  process.env.GEMINI_MODELS || "gemini-3.8-flash,gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest"
 )
   .split(",")
   .map((s) => s.trim())
@@ -167,16 +167,24 @@ async function callGemini(req: GuideRequest): Promise<GuideResponse> {
     required: ["answer"],
   };
 
-  let lastErr: unknown;
-  for (const model of GEMINI_MODELS) {
-    for (const thinking of [true, false]) {
+  // Try each model with progressively simpler configs: a model that rejects a
+  // config (400) gets a simpler one; a missing/busy model (404/429/5xx) is skipped.
+  const configs = [
+    { thinking: true, schema: true },
+    { thinking: false, schema: true },
+    { thinking: false, schema: false },
+  ];
+  const errors: string[] = [];
+  for (const model of await geminiModels()) {
+    for (const cfg of configs) {
       const generationConfig: Record<string, unknown> = {
         temperature: 0.4,
         maxOutputTokens: 2048,
         responseMimeType: "application/json",
-        responseSchema: schema,
       };
-      if (thinking && model.includes("2.5")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      if (cfg.schema) generationConfig.responseSchema = schema;
+      if (cfg.thinking && model.includes("2.5")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      if (cfg.thinking && !model.includes("2.5")) continue; // thinking tweak only applies to 2.5 models
       try {
         const res = await withTimeout(28000, (signal) =>
           fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -192,9 +200,8 @@ async function callGemini(req: GuideRequest): Promise<GuideResponse> {
         );
         if (!res.ok) {
           const body = await res.text();
-          lastErr = new Error(`gemini ${model} ${res.status}: ${body.slice(0, 300)}`);
-          // Bad config for this model → retry once without thinkingConfig; otherwise next model.
-          if (res.status === 400 && thinking && /thinking/i.test(body)) continue;
+          errors.push(`${model} ${res.status}: ${body.replace(/\s+/g, " ").slice(0, 180)}`);
+          if (res.status === 400) continue;
           break;
         }
         const json = await res.json();
@@ -203,12 +210,45 @@ async function callGemini(req: GuideRequest): Promise<GuideResponse> {
           .join("");
         return normalise(parseJson(text), "gemini", model);
       } catch (e) {
-        lastErr = e;
+        errors.push(`${model}: ${String(e).slice(0, 120)}`);
         break;
       }
     }
   }
-  throw lastErr ?? new Error("gemini failed");
+  throw new Error(`gemini failed → ${errors.join(" | ")}`);
+}
+
+/* Discover which Flash models this key can use (Google retires model names over time). */
+let MODEL_CACHE: { at: number; models: string[] } | null = null;
+
+async function geminiModels(): Promise<string[]> {
+  if (process.env.GEMINI_MODELS) return GEMINI_MODELS;
+  if (MODEL_CACHE && Date.now() - MODEL_CACHE.at < 3600_000) return MODEL_CACHE.models;
+  const fallback = ["gemini-flash-latest", ...GEMINI_MODELS];
+  try {
+    const res = await withTimeout(8000, (signal) =>
+      fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+        headers: { "x-goog-api-key": GEMINI_KEY },
+        signal,
+      }),
+    );
+    if (!res.ok) throw new Error(String(res.status));
+    const j = (await res.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+    const names = (j.models || [])
+      .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => m.name.replace(/^models\//, ""))
+      .filter((n) => /flash/.test(n) && !/(tts|image|live|audio|embed|exp|robotics|computer)/.test(n));
+    const score = (n: string) => {
+      const v = parseFloat(/gemini-(\d+(?:\.\d+)?)/.exec(n)?.[1] || "0");
+      return (/latest/.test(n) ? 1000 : 0) + v * 10 - (/lite/.test(n) ? 4 : 0) - (/preview/.test(n) ? 2 : 0) - (/\d{3}$/.test(n) ? 1 : 0);
+    };
+    names.sort((a, b) => score(b) - score(a));
+    const models = [...new Set([...names.slice(0, 5), ...fallback])].slice(0, 7);
+    MODEL_CACHE = { at: Date.now(), models };
+    return models;
+  } catch {
+    return fallback;
+  }
 }
 
 /* ---------------- Groq (fallback) ---------------- */
@@ -300,6 +340,24 @@ const TTS_MODELS = (process.env.GEMINI_TTS_MODELS || "gemini-2.5-flash-preview-t
   .split(",")
   .map((s) => s.trim());
 const ttsCache = new Map<string, Buffer>();
+let TTS_CACHE: string[] | null = null;
+
+async function ttsModels(): Promise<string[]> {
+  if (process.env.GEMINI_TTS_MODELS) return TTS_MODELS;
+  if (TTS_CACHE) return TTS_CACHE;
+  try {
+    const res = await withTimeout(8000, (signal) =>
+      fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": GEMINI_KEY }, signal }),
+    );
+    const j = (await res.json()) as { models?: { name: string }[] };
+    const names = (j.models || []).map((m) => m.name.replace(/^models\//, "")).filter((n) => /tts/.test(n) && /flash/.test(n));
+    names.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+    TTS_CACHE = [...new Set([...names.slice(0, 3), ...TTS_MODELS])];
+  } catch {
+    TTS_CACHE = TTS_MODELS;
+  }
+  return TTS_CACHE;
+}
 
 function pcmToWav(pcm: Buffer, rate = 24000) {
   const header = Buffer.alloc(44);
@@ -324,7 +382,7 @@ export async function synthesize(text: string, lang: Lang): Promise<Buffer | nul
   const key = `${lang}:${text}`;
   const hit = ttsCache.get(key);
   if (hit) return hit;
-  for (const model of TTS_MODELS) {
+  for (const model of await ttsModels()) {
     try {
       const res = await withTimeout(30000, (signal) =>
         fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {

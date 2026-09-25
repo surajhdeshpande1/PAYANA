@@ -58,6 +58,7 @@ const D: Dict = {
   "crowd.packed": ["Very crowded", "ತುಂಬಾ ಜನಸಂದಣಿ", "बहुत भीड़"],
   "crowd.live": ["Live crowd", "ಲೈವ್ ಜನಸಂದಣಿ", "लाइव भीड़"],
   "crowd.now": ["now", "ಈಗ", "अभी"],
+  "crowd.allCalm": ["Crowds are low right now — a great time to visit.", "ಈಗ ಜನ ಕಡಿಮೆ — ಭೇಟಿ ನೀಡಲು ಅತ್ಯುತ್ತಮ ಸಮಯ.", "अभी भीड़ कम है — घूमने का बढ़िया समय।"],
   "crowd.tryInstead": ["Go here instead", "ಬದಲಿಗೆ ಇಲ್ಲಿಗೆ ಹೋಗಿ", "इसके बजाय यहाँ जाएँ"],
   "crowd.closed": ["Sites closed now · open 6 AM", "ಈಗ ತಾಣಗಳು ಮುಚ್ಚಿವೆ · ಬೆಳಿಗ್ಗೆ 6ಕ್ಕೆ ತೆರೆಯುತ್ತವೆ", "अभी स्थल बंद हैं · सुबह 6 बजे खुलेंगे"],
   "crowd.bestTime": ["Best time to visit", "ಭೇಟಿಗೆ ಉತ್ತಮ ಸಮಯ", "जाने का सबसे अच्छा समय"],

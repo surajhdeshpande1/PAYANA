@@ -36,7 +36,7 @@ export function LangSwitch({ compact = false }: { compact?: boolean }) {
           key={l.code}
           onClick={() => setLang(l.code)}
           className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-            lang === l.code ? "bg-gold text-maroon-950" : "text-sand"
+            lang === l.code ? "bg-white text-maroon-950" : "text-sand"
           }`}
           aria-label={l.label}
         >

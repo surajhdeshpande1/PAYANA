@@ -15,8 +15,9 @@ export interface GuideRequest {
   localTime?: string;
 }
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-const GROQ_KEY = process.env.GROQ_API_KEY || "";
+const env = (...names: string[]) => names.map((n) => process.env[n]?.trim()).find(Boolean) || "";
+const GEMINI_KEY = env("GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI", "gemini", "Gemini");
+const GROQ_KEY = env("GROQ_API_KEY", "GROQ", "groq", "Groq", "grok", "GROK");
 const GEMINI_MODELS = (
   process.env.GEMINI_MODELS || "gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite,gemini-2.0-flash"
 )

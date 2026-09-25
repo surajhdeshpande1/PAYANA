@@ -218,7 +218,7 @@ export default function GuidePage() {
             <button
               onClick={startRecording}
               className="pulse-ring flex h-28 w-28 items-center justify-center rounded-full text-maroon-950 shadow-2xl"
-              style={{ background: "linear-gradient(180deg,#f7d997,#e8b45a 60%,#c9923f)" }}
+              style={{ background: "linear-gradient(180deg,#ffffff,#f1e7d8)" }}
               aria-label={t("guide.tapToSpeak")}
             >
               <Mic size={46} strokeWidth={2.2} />

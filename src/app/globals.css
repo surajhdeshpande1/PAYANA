@@ -1,29 +1,30 @@
 @import "tailwindcss";
 
+/* Premium heritage palette: deep mahogany, porcelain white, champagne gold hairlines. */
 @theme {
-  --color-ink: #140504;
-  --color-maroon-950: #1a0806;
-  --color-maroon-900: #260c08;
-  --color-maroon-800: #35120c;
-  --color-maroon-700: #461910;
-  --color-maroon-600: #5e2416;
-  --color-maroon-500: #7a3220;
-  --color-gold: #e8b45a;
-  --color-gold-light: #f7d997;
-  --color-gold-dark: #b98538;
-  --color-cream: #f8ecd9;
-  --color-sand: #dcc4a4;
-  --color-muted: #b99c80;
-  --color-teal: #3fd1b5;
-  --color-calm: #5fcf80;
-  --color-moderate: #f0c14b;
-  --color-busy: #f08a3c;
-  --color-packed: #e5533d;
+  --color-ink: #0f0403;
+  --color-maroon-950: #140504;
+  --color-maroon-900: #1e0907;
+  --color-maroon-800: #2a0f0b;
+  --color-maroon-700: #3a150f;
+  --color-maroon-600: #552015;
+  --color-maroon-500: #72301f;
+  --color-gold: #d9b36c;
+  --color-gold-light: #f6ecdc;
+  --color-gold-dark: #a8823f;
+  --color-cream: #fdfaf5;
+  --color-sand: #e7dccd;
+  --color-muted: #b7a491;
+  --color-teal: #7fd8c4;
+  --color-calm: #6fd394;
+  --color-moderate: #f2c862;
+  --color-busy: #f29a58;
+  --color-packed: #ee6a55;
 }
 
 @theme inline {
-  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
-  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
   --font-sans: var(--font-outfit), var(--font-kannada), var(--font-deva), system-ui, sans-serif;
 }
 
@@ -41,63 +42,75 @@ html.a11y {
 }
 
 html.a11y .a11y-contrast {
-  color: #fff7ea;
+  color: #ffffff;
 }
 
 body {
   min-height: 100dvh;
   background-color: var(--color-maroon-950);
   background-image:
-    radial-gradient(1200px 600px at 50% -10%, rgba(122, 50, 32, 0.55), transparent 60%),
-    radial-gradient(800px 500px at 100% 100%, rgba(94, 36, 22, 0.45), transparent 60%);
+    radial-gradient(900px 520px at 50% -12%, rgba(114, 48, 31, 0.5), transparent 62%),
+    radial-gradient(700px 520px at 110% 105%, rgba(85, 32, 21, 0.4), transparent 60%);
   background-attachment: fixed;
   color: var(--color-cream);
   font-family: var(--font-sans);
+  letter-spacing: 0.005em;
   overscroll-behavior-y: none;
 }
 
+/* Cormorant uses old-style figures; lining figures read better in stats. */
+.font-display,
+.font-serif {
+  font-feature-settings: "lnum" 1, "pnum" 1;
+}
+
 @layer components {
+  /* Frosted glass card with a porcelain hairline */
   .card {
-    @apply rounded-2xl border border-gold/20 bg-maroon-800/70 backdrop-blur-sm;
-    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(247, 217, 151, 0.06);
+    @apply rounded-2xl backdrop-blur-md;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.025) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
   .card-solid {
-    @apply rounded-2xl border border-gold/20 bg-maroon-800;
+    @apply rounded-2xl border border-white/10 bg-maroon-800;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
+  /* Primary: porcelain white with deep maroon text */
   .btn-gold {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none text-maroon-950;
-    background: linear-gradient(180deg, #f7d997 0%, #e8b45a 55%, #c9923f 100%);
-    box-shadow: 0 6px 18px -6px rgba(232, 180, 90, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold tracking-wide text-maroon-950 transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
+    background: linear-gradient(180deg, #ffffff 0%, #f6efe4 100%);
+    box-shadow: 0 10px 24px -12px rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(169, 130, 63, 0.35);
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none border border-gold/35 bg-maroon-700/40 text-gold-light hover:bg-maroon-700/70;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-teal {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-teal text-maroon-950;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-teal px-5 py-3 text-sm font-semibold text-maroon-950 transition active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-maroon-700/50 px-3 py-1.5 text-xs font-medium text-sand transition active:scale-95;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-sand transition active:scale-95;
   }
   .chip-on {
-    @apply border-gold bg-gold text-maroon-950;
+    @apply border-white bg-white text-maroon-950;
   }
+  /* White-to-champagne foil for the wordmark */
   .gold-text {
-    background: linear-gradient(180deg, #fff1c9 0%, #f7d997 35%, #e8b45a 70%, #b98538 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #fbf3e4 45%, #e9cf98 80%, #c9a15a 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .section-title {
-    @apply font-serif text-lg font-semibold text-gold-light;
+    @apply font-serif text-[22px] font-semibold leading-tight text-white;
   }
   .label {
-    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/80;
+    @apply mb-1.5 block text-[10.5px] font-semibold uppercase tracking-[0.22em] text-gold;
   }
   .input {
-    @apply w-full rounded-xl border border-gold/25 bg-maroon-900/80 px-3.5 py-3 text-sm text-cream placeholder:text-muted/70 outline-none focus:border-gold/70;
+    @apply w-full rounded-xl border border-white/12 bg-white/[0.05] px-3.5 py-3 text-sm text-white placeholder:text-muted/70 outline-none focus:border-gold/70;
   }
   .no-scrollbar {
     scrollbar-width: none;
@@ -106,12 +119,16 @@ body {
     display: none;
   }
   .divider-ornament {
-    @apply flex items-center gap-3 text-gold/60;
+    @apply flex items-center gap-3 text-gold/70;
   }
   .divider-ornament::before,
   .divider-ornament::after {
     content: "";
-    @apply h-px flex-1 bg-linear-to-r from-transparent via-gold/40 to-transparent;
+    @apply h-px flex-1 bg-linear-to-r from-transparent via-gold/45 to-transparent;
+  }
+  /* Thin champagne hairline used under eyebrows and around the hero */
+  .hairline {
+    @apply h-px bg-linear-to-r from-transparent via-gold/50 to-transparent;
   }
 }
 
@@ -125,13 +142,13 @@ body {
 
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(232, 180, 90, 0.55);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 18px rgba(232, 180, 90, 0);
+    box-shadow: 0 0 0 16px rgba(255, 255, 255, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(232, 180, 90, 0);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
   }
 }
 .pulse-ring {

@@ -38,7 +38,7 @@ export default function Home() {
       {/* Hero */}
       <section className="relative h-[330px] overflow-hidden">
         <img src="/images/hero.jpg" alt="Agastya lake and Bhutanatha temples, Badami" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-linear-to-b from-maroon-950/70 via-maroon-950/20 to-maroon-950" />
+        <div className="absolute inset-0 bg-linear-to-b from-maroon-950/65 via-maroon-950/45 to-maroon-950" />
         <div className="relative flex items-center justify-between px-4 pt-4">
           <span className="flex items-center gap-2 rounded-full border border-gold/30 bg-maroon-950/60 py-1 pl-1 pr-3 backdrop-blur">
             <img src="/icons/icon-192.png" alt="" className="h-7 w-7 rounded-full" />
@@ -50,9 +50,10 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute inset-x-0 bottom-12 px-5">
-          <p className="font-serif text-xl italic text-gold-light">{t("greeting")}</p>
-          <h1 className="gold-text font-display text-[56px] leading-none tracking-wide drop-shadow-lg">PAYANA</h1>
-          <p className="mt-1 max-w-[20rem] text-sm text-cream/90">{t("tagline")}</p>
+          <p className="font-serif text-[26px] font-medium italic text-white drop-shadow">{t("greeting")}</p>
+          <h1 className="gold-text font-display text-[60px] font-semibold leading-none tracking-[0.14em] drop-shadow-lg">PAYANA</h1>
+          <div className="hairline my-2 w-40 from-gold/80" />
+          <p className="max-w-[20rem] text-[13px] uppercase tracking-[0.18em] text-cream/85">{t("tagline")}</p>
         </div>
       </section>
 
@@ -81,22 +82,28 @@ export default function Home() {
                   <CrowdBadge level={busiest.c.level} pct={busiest.c.pct} small />
                 </div>
               </Link>
-              <div className="flex items-center gap-2 pl-6 text-xs font-semibold text-teal">
-                <ArrowDown size={14} /> {t("crowd.tryInstead")} · {alt.km.toFixed(0)} km
-              </div>
-              <Link
-                href={`/site/${alt.s.id}`}
-                className="flex items-center gap-3 rounded-xl border border-teal/40 bg-teal/10 p-2.5"
-              >
-                <img src={sitePhoto(alt.s.id).src} alt="" className="h-12 w-12 rounded-lg object-cover" />
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
-                    <Gem size={13} className="text-gold" /> {alt.s.name[lang]}
-                  </p>
-                  <CrowdBadge level={alt.c.level} pct={alt.c.pct} small />
-                </div>
-                <span className="text-xs font-bold text-teal">{t("open")} →</span>
-              </Link>
+              {busiest.c.level === "busy" || busiest.c.level === "packed" ? (
+                <>
+                  <div className="flex items-center gap-2 pl-6 text-xs font-semibold text-teal">
+                    <ArrowDown size={14} /> {t("crowd.tryInstead")} · {alt.km.toFixed(0)} km
+                  </div>
+                  <Link
+                    href={`/site/${alt.s.id}`}
+                    className="flex items-center gap-3 rounded-xl border border-teal/40 bg-teal/10 p-2.5"
+                  >
+                    <img src={sitePhoto(alt.s.id).src} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
+                        <Gem size={13} className="text-gold" /> {alt.s.name[lang]}
+                      </p>
+                      <CrowdBadge level={alt.c.level} pct={alt.c.pct} small />
+                    </div>
+                    <span className="text-xs font-bold text-teal">{t("open")} →</span>
+                  </Link>
+                </>
+              ) : (
+                <p className="pl-1 text-xs font-medium text-calm">✓ {t("crowd.allCalm")}</p>
+              )}
             </div>
           ) : (
             <div className="mt-3 rounded-xl bg-maroon-900/70 p-3 text-sm">
@@ -126,7 +133,7 @@ export default function Home() {
               className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
                 accent ? "text-maroon-950" : "bg-maroon-700/80 text-gold-light"
               }`}
-              style={accent ? { background: "linear-gradient(180deg,#f7d997,#e8b45a 60%,#c9923f)" } : undefined}
+              style={accent ? { background: "linear-gradient(180deg,#ffffff,#f1e7d8)" } : undefined}
             >
               <Icon size={22} />
             </span>

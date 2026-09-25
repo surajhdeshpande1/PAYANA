@@ -36,7 +36,7 @@ export default function BottomNav() {
                       className={`flex h-[60px] w-[60px] items-center justify-center rounded-full border-4 border-maroon-950 text-maroon-950 shadow-lg ${
                         active ? "" : "pulse-ring"
                       }`}
-                      style={{ background: "linear-gradient(180deg,#f7d997,#e8b45a 60%,#c9923f)" }}
+                      style={{ background: "linear-gradient(180deg,#ffffff,#f1e7d8)" }}
                     >
                       <Icon size={26} strokeWidth={2.2} />
                     </span>

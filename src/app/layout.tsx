@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Noto_Sans_Devanagari, Noto_Sans_Kannada, Outfit, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Noto_Sans_Devanagari, Noto_Sans_Kannada, Outfit } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/lib/store";
 import AppShell from "@/components/AppShell";
 
-const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton", display: "swap" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap", style: ["normal", "italic"] });
+const cormorant = Cormorant_Garamond({ weight: ["500", "600", "700"], style: ["normal", "italic"], subsets: ["latin"], variable: "--font-cormorant", display: "swap" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 const kannada = Noto_Sans_Kannada({ subsets: ["kannada"], variable: "--font-kannada", display: "swap" });
 const deva = Noto_Sans_Devanagari({ subsets: ["devanagari"], variable: "--font-deva", display: "swap" });
@@ -36,7 +35,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1a0806",
+  themeColor: "#140504",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -44,7 +43,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${anton.variable} ${playfair.variable} ${outfit.variable} ${kannada.variable} ${deva.variable}`}>
+    <html lang="en" className={`${cormorant.variable} ${outfit.variable} ${kannada.variable} ${deva.variable}`}>
       <body className="antialiased">
         <AppProvider>
           <AppShell>{children}</AppShell>

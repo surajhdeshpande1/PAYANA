@@ -1,5 +1,5 @@
 /* PAYANA service worker — offline-first shell, cached heritage content & photos. */
-const VERSION = "payana-v1";
+const VERSION = "payana-v2";
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -32,17 +32,21 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-async function pageNetworkFirst(req, timeoutMs = 3500) {
+async function pageNetworkFirst(req, timeoutMs = 6000) {
   const url = new URL(req.url);
   const key = new Request(url.origin + url.pathname);
   const cache = await caches.open(RUNTIME);
-  try {
-    const res = await Promise.race([
-      fetch(req),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), timeoutMs)),
-    ]);
+  // Keep the saved copy fresh even if we fall back to it this time.
+  const network = fetch(req).then((res) => {
     if (res && res.ok && (res.headers.get("content-type") || "").includes("text/html")) cache.put(key, res.clone());
     return res;
+  });
+  network.catch(() => {});
+  try {
+    return await Promise.race([
+      network,
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), timeoutMs)),
+    ]);
   } catch {
     const hit = (await caches.match(key)) || (await caches.match(url.pathname));
     if (hit) return hit;

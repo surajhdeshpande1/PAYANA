@@ -1,7 +1,7 @@
 import { SAMPLE_ARTISANS } from "../artisans";
 import { LANG_NAME } from "../i18n";
 import { crowdSnapshotText, offlineAnswer, type CrowdSnapshot } from "../offline";
-import { SITES, getSite } from "../sites";
+import { SITES, findSiteInText, getSite } from "../sites";
 import type { GuideResponse, Lang } from "../types";
 
 export interface GuideRequest {
@@ -60,7 +60,28 @@ function knowledgeBase() {
   return KB_CACHE;
 }
 
-function systemPrompt(lang: Lang) {
+/**
+ * Compact grounding for small-context/low-quota providers (Groq free tier: 8k TPM):
+ * one-line summary per site + full facts only for the site(s) the question is about.
+ */
+function compactKnowledgeBase(query: string, focusId?: string | null) {
+  const focus = new Set<string>();
+  const hit = findSiteInText(query);
+  if (hit) focus.add(hit.id);
+  if (focusId && getSite(focusId)) focus.add(focusId);
+  const lines = SITES.map((s) => {
+    const tags = [s.unesco ? "UNESCO" : "", s.lesserKnown ? "hidden gem" : ""].filter(Boolean).join(", ");
+    const head = `### ${s.id} — ${s.name.en} (${s.town})${tags ? ` [${tags}]` : ""}: ${s.summary.en}`;
+    if (!focus.has(s.id)) return head;
+    return `${head}\nFacts:\n${s.facts.map((f) => `- ${f}`).join("\n")}\nVisit: ${s.timings}; entry ${s.entryFee}; best ${s.bestTime}.\nAccessibility: ${s.accessibility.level}, ~${s.accessibility.steps} steps. ${s.accessibility.notes}`;
+  }).join("\n");
+  const artisans = SAMPLE_ARTISANS.slice(0, 10)
+    .map((a) => `- ${a.name.en}: ${a.craft.en}, ${a.town}`)
+    .join("\n");
+  return `## HERITAGE SITES\n${lines}\n\n## LOCAL ARTISANS & FOOD\n${artisans}\n\n## HELPLINES\nEmergency 112 · Tourist helpline 1363`;
+}
+
+function systemPrompt(lang: Lang, kb: string = knowledgeBase()) {
   const L = LANG_NAME[lang];
   const script = lang === "kn" ? "Kannada script" : lang === "hi" ? "Devanagari script" : "English";
   return `You are "Payana" (ಪಯಣ), a warm, knowledgeable local heritage guide for Bagalkote district, Karnataka, India — Badami, Aihole, Pattadakal and nearby places. You help tourists explore, avoid crowds and support local artisans.
@@ -74,7 +95,7 @@ RULES
 6. Output JSON only, with keys: site_id (knowledge-base id or null), confidence (0-1), transcript (only for voice input), answer.
 
 KNOWLEDGE BASE
-${knowledgeBase()}`;
+${kb}`;
 }
 
 function taskText(req: GuideRequest, lastUser: string) {
@@ -294,8 +315,12 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
   const body: Record<string, unknown> = {
     model,
     temperature: 0.4,
-    max_tokens: 1500,
-    messages: [{ role: "system", content: systemPrompt(req.lang) }, ...history, { role: "user", content }],
+    max_tokens: 900,
+    messages: [
+      { role: "system", content: systemPrompt(req.lang, compactKnowledgeBase(lastUser, req.siteId)) },
+      ...history,
+      { role: "user", content },
+    ],
   };
   if (!req.image) body.response_format = { type: "json_object" };
   const res = await withTimeout(28000, (signal) =>
@@ -371,7 +396,7 @@ export async function runGuide(req: GuideRequest, force?: "gemini" | "groq"): Pr
   }
   if (errors.length) console.error("[guide] all providers failed:", errors.join(" | "));
   const lastUser = req.messages.filter((m) => m.role === "user").at(-1)?.text || "";
-  return offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image || req.audio) });
+  return offlineAnswer(lastUser, req.lang, { siteId: req.siteId, crowd: req.crowd, image: Boolean(req.image), audio: Boolean(req.audio) });
 }
 
 /* ---------------- Text-to-speech (Gemini TTS) ---------------- */

@@ -18,6 +18,11 @@ const T = {
     kn: (n: string) => `${n} ಗೆ ಭೇಟಿ ನೀಡಿ. ಸ್ಥಳೀಯ ನೇಕಾರರಿಂದ ನೇರವಾಗಿ ಖರೀದಿಸಿದರೆ ಪ್ರವಾಸೋದ್ಯಮದ ಆದಾಯ ಬಾಗಲಕೋಟೆಯ ಹಳ್ಳಿಗಳಲ್ಲೇ ಉಳಿಯುತ್ತದೆ. ಇನ್ನಷ್ಟು ನೋಡಲು ಕುಶಲಕರ್ಮಿ ವಿಭಾಗ ತೆರೆಯಿರಿ.`,
     hi: (n: string) => `${n} जाएँ। स्थानीय बुनकरों से सीधे खरीदने पर पर्यटन की कमाई बागलकोट के गाँवों में ही रहती है। और देखने के लिए कारीगर टैब खोलें।`,
   },
+  noVoice: {
+    en: "I couldn't process your voice right now. Please type your question or pick a site below.",
+    kn: "ಈಗ ನಿಮ್ಮ ಧ್ವನಿಯನ್ನು ಗ್ರಹಿಸಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪ್ರಶ್ನೆಯನ್ನು ಬರೆಯಿರಿ ಅಥವಾ ಕೆಳಗಿನ ತಾಣ ಆಯ್ಕೆಮಾಡಿ.",
+    hi: "अभी आपकी आवाज़ समझ नहीं पाया। कृपया सवाल लिखें या नीचे कोई स्थल चुनें।",
+  },
   generic: {
     en: "I can tell you about Badami's caves, Aihole, Pattadakal, Mahakuta, Banashankari, Kudalasangama, Ilkal sarees and more. Try asking about one of them.",
     kn: "ಬಾದಾಮಿ ಗುಹೆಗಳು, ಐಹೊಳೆ, ಪಟ್ಟದಕಲ್ಲು, ಮಹಾಕೂಟ, ಬನಶಂಕರಿ, ಕೂಡಲಸಂಗಮ, ಇಳಕಲ್ ಸೀರೆ ಮತ್ತು ಇನ್ನಷ್ಟು ಬಗ್ಗೆ ಹೇಳಬಲ್ಲೆ. ಇವುಗಳಲ್ಲಿ ಒಂದರ ಬಗ್ಗೆ ಕೇಳಿ.",
@@ -33,9 +38,10 @@ const T = {
 export function offlineAnswer(
   question: string,
   lang: Lang,
-  opts: { siteId?: string | null; crowd?: CrowdSnapshot; image?: boolean } = {},
+  opts: { siteId?: string | null; crowd?: CrowdSnapshot; image?: boolean; audio?: boolean } = {},
 ): GuideResponse {
   if (opts.image) return { answer: T.noPhoto[lang], siteId: null, confidence: 0, provider: "offline" };
+  if (opts.audio) return { answer: T.noVoice[lang], siteId: null, confidence: 0, provider: "offline" };
   const q = question.toLowerCase();
 
   if (opts.crowd && CROWD_WORDS.some((w) => q.includes(w))) {

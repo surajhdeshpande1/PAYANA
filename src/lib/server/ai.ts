@@ -310,36 +310,48 @@ async function callGroq(req: GuideRequest): Promise<GuideResponse> {
       ]
     : task;
   const available = await groqModels();
-  const model = req.image ? available.vision : available.text;
-  if (!model) throw new Error("groq: no suitable model available");
-  const body: Record<string, unknown> = {
-    model,
-    temperature: 0.4,
-    max_tokens: 900,
-    messages: [
-      { role: "system", content: systemPrompt(req.lang, compactKnowledgeBase(lastUser, req.siteId)) },
-      ...history,
-      { role: "user", content },
-    ],
-  };
-  if (!req.image) body.response_format = { type: "json_object" };
-  const res = await withTimeout(28000, (signal) =>
-    fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify(body),
-    }),
-  );
-  if (!res.ok) throw new Error(`groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const j = await res.json();
-  const out = normalise(parseJson(j.choices?.[0]?.message?.content || ""), "groq", model);
-  if (transcript) out.transcript = transcript;
-  return out;
+  const candidates = req.image ? (available.vision ? [available.vision] : []) : available.texts;
+  if (!candidates.length) throw new Error("groq: no suitable model available");
+  const errors: string[] = [];
+  for (const model of candidates) {
+    const body: Record<string, unknown> = {
+      model,
+      temperature: 0.4,
+      max_tokens: 1400,
+      messages: [
+        { role: "system", content: systemPrompt(req.lang, compactKnowledgeBase(lastUser, req.siteId)) },
+        ...history,
+        { role: "user", content },
+      ],
+    };
+    if (!req.image) body.response_format = { type: "json_object" };
+    if (/gpt-oss|qwen3|reason/i.test(model)) body.reasoning_effort = "low"; // keep tokens for the answer
+    try {
+      const res = await withTimeout(28000, (signal) =>
+        fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          signal,
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
+          body: JSON.stringify(body),
+        }),
+      );
+      if (!res.ok) {
+        errors.push(`groq ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        continue; // rate-limited / too large / bad JSON → next model
+      }
+      const j = await res.json();
+      const out = normalise(parseJson(j.choices?.[0]?.message?.content || ""), "groq", model);
+      if (transcript) out.transcript = transcript;
+      return out;
+    } catch (e) {
+      errors.push(`groq ${model}: ${String(e).slice(0, 120)}`);
+    }
+  }
+  throw new Error(errors.join(" | "));
 }
 
 /* Discover Groq models (Groq also retires model names over time). */
-let GROQ_CACHE: { at: number; text?: string; vision?: string; stt: string } | null = null;
+let GROQ_CACHE: { at: number; text?: string; texts: string[]; vision?: string; stt: string } | null = null;
 
 async function groqModels() {
   if (GROQ_CACHE && Date.now() - GROQ_CACHE.at < 3600_000) return GROQ_CACHE;
@@ -361,8 +373,14 @@ async function groqModels() {
     }
   } catch {}
   const chatIds = ids.filter((id) => !/(whisper|guard|tts|orpheus|playai|distil|prompt|safeguard|compound)/i.test(id));
+  // Up to three distinct chat models in preference order, so one busy model doesn't sink the fallback.
+  const textPrefs = [/gpt-oss-120b/, /llama-3\.3-70b/, /llama-4-maverick/, /kimi-k2/, /gpt-oss-20b/, /qwen/, /llama-3\.1-8b/, /llama/];
+  const texts = [...new Set(textPrefs.map((p) => chatIds.find((id) => p.test(id))).filter((x): x is string => Boolean(x)))].slice(0, 3);
+  if (process.env.GROQ_TEXT_MODEL) texts.unshift(process.env.GROQ_TEXT_MODEL);
+  if (!texts.length) texts.push(GROQ_TEXT);
   GROQ_CACHE = {
     at: Date.now(),
+    texts,
     text:
       process.env.GROQ_TEXT_MODEL ||
       pick(chatIds, [/gpt-oss-120b/, /llama-3\.3-70b/, /llama-4-maverick/, /kimi-k2/, /qwen3?-.*32b/, /llama-4/, /gpt-oss/, /llama/, /./]) ||

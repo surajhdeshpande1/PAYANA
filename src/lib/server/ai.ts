@@ -473,7 +473,8 @@ export async function synthesize(text: string, lang: Lang): Promise<Buffer | nul
           signal,
           headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `Read this aloud warmly, like a friendly tour guide, in ${LANG_NAME[lang]}: ${text}` }] }],
+            // Send only the text: TTS models may read any instruction prefix aloud.
+            contents: [{ parts: [{ text }] }],
             generationConfig: {
               responseModalities: ["AUDIO"],
               speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },

@@ -100,10 +100,13 @@ ${kb}`;
 
 function taskText(req: GuideRequest, lastUser: string) {
   const L = LANG_NAME[req.lang];
-  const focus = getSite(req.siteId);
+  // A site named in the question always wins over the page/chat focus.
+  const named = findSiteInText(lastUser);
+  const focus = named ?? getSite(req.siteId);
   const ctx = `LIVE CONTEXT — local time: ${req.localTime || new Date().toISOString()}; crowd now: ${crowdSnapshotText(
     req.crowd,
-  )}${focus ? `; the visitor is currently looking at: ${focus.id} (${focus.name.en})` : ""}.`;
+  )}${focus ? `; earlier context was about: ${focus.id} (${focus.name.en})` : ""}.
+IMPORTANT: Answer exactly what the visitor asks. If the question names a site, answer about THAT site even if the earlier context was about another one.`;
   if (req.mode === "scan") {
     return `${ctx}
 TASK: Identify which knowledge-base site this photo most likely shows, using each site's "Looks like" description. Set site_id to that id and confidence 0–1. If it is not clearly one of them (confidence below 0.45), set site_id to null, briefly say what you see and that you cannot confirm it is a Bagalkote heritage site. If identified, write "answer" as an engaging 90–130 word guide narration in ${L}: what the visitor is looking at, its history, and one detail to look for.${

@@ -9,9 +9,12 @@ import BottomNav from "./BottomNav";
 import FloatingMic from "./FloatingMic";
 import LanguagePicker from "./LanguagePicker";
 import DemoTour from "./DemoTour";
+import AuthScreen from "./AuthScreen";
+import { useAuth } from "@/lib/auth";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { ready, langChosen, online, toasts, t, demoStep } = useApp();
+  const auth = useAuth();
   const path = usePathname();
   const bare = path?.startsWith("/share/print");
 
@@ -25,6 +28,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (bare) return <>{children}</>;
+
+  // Accounts are required before the app (the QR share page stays open for judges).
+  const needsAuth = auth.ready && !auth.user && !path?.startsWith("/share");
+  if (ready && langChosen && needsAuth) {
+    return (
+      <div className="relative mx-auto min-h-dvh w-full max-w-md">
+        <AuthScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="relative mx-auto min-h-dvh w-full max-w-md overflow-x-hidden sm:border-x sm:border-gold/10 sm:shadow-2xl">

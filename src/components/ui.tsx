@@ -12,7 +12,7 @@ import {
   Menu,
   QrCode,
   ShieldAlert,
-  Sparkles,
+  LogOut,
   Stamp,
   Store,
   Volume2,
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { LANGS } from "@/lib/i18n";
 import { useApp } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { LEVEL_COLOR, fmtHour, fmtTime, hourlyForecast, type CrowdLevel } from "@/lib/crowd";
 import { sitePhoto } from "@/lib/sites";
 import { speak, stopSpeaking, useSpeaking } from "@/lib/tts";
@@ -50,7 +51,8 @@ export function LangSwitch({ compact = false }: { compact?: boolean }) {
 /* ---------- Menu sheet ---------- */
 export function MenuButton() {
   const [open, setOpen] = useState(false);
-  const { t, a11y, setA11y, setDemoStep } = useApp();
+  const { t, a11y, setA11y } = useApp();
+  const { user, signOut } = useAuth();
   const links = [
     { href: "/passport", icon: Stamp, label: t("menu.passport") },
     { href: "/sos", icon: ShieldAlert, label: t("menu.sos") },
@@ -102,16 +104,27 @@ export function MenuButton() {
                   <Icon size={19} className="text-gold" /> {label}
                 </Link>
               ))}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setDemoStep(0);
-                }}
-                className="btn-teal mt-1"
-              >
-                <Sparkles size={17} /> {t("menu.demo")}
-              </button>
             </div>
+            {user && (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-serif text-lg font-semibold text-maroon-950">
+                  {user.name.trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-white">{user.name}</span>
+                  <span className="block truncate text-xs text-muted">{user.email}</span>
+                </span>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    signOut();
+                  }}
+                  className="btn-ghost shrink-0 px-3 py-2 text-xs"
+                >
+                  <LogOut size={14} /> {t("auth.signout")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

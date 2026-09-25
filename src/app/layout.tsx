@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Noto_Sans_Devanagari, Noto_Sans_Kannada, Outfit } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/lib/store";
+import { AuthProvider } from "@/lib/auth";
 import AppShell from "@/components/AppShell";
 
 const cormorant = Cormorant_Garamond({ weight: ["500", "600", "700"], style: ["normal", "italic"], subsets: ["latin"], variable: "--font-cormorant", display: "swap" });
@@ -46,7 +47,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${cormorant.variable} ${outfit.variable} ${kannada.variable} ${deva.variable}`}>
       <body className="antialiased">
         <AppProvider>
-          <AppShell>{children}</AppShell>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
         </AppProvider>
       </body>
     </html>

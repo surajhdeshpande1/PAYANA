@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, Camera, Gem, LayoutDashboard, Mic, QrCode, Route, ShieldAlert, Stamp, Store, Sparkles } from "lucide-react";
+import { ArrowDown, Camera, Gem, LayoutDashboard, Mic, QrCode, Route, ShieldAlert, Stamp, Store } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { SITES, haversineKm, sitePhoto } from "@/lib/sites";
 import { bestHours, fmtHour, isOpenHour } from "@/lib/crowd";
 import { passportPoints } from "@/lib/passport";
 import { CrowdBadge, LangSwitch, MenuButton, SectionHeader, SiteCard, TimeMachine } from "@/components/ui";
 
 export default function Home() {
-  const { t, lang, crowd, now, stamps, setDemoStep, demoStep } = useApp();
+  const { t, lang, crowd, now, stamps } = useApp();
+  const { user } = useAuth();
+  const firstName = user?.name.trim().split(/\s+/)[0];
   const open = isOpenHour(now);
 
   const majors = SITES.filter((s) => !s.lesserKnown)
@@ -50,7 +53,7 @@ export default function Home() {
           </div>
         </div>
         <div className="absolute inset-x-0 bottom-12 px-5">
-          <p className="font-serif text-[26px] font-medium italic text-white drop-shadow">{t("greeting")}</p>
+          <p className="font-serif text-[26px] font-medium italic text-white drop-shadow">{firstName ? t("auth.hello", { name: firstName }) : t("greeting")}</p>
           <h1 className="gold-text font-display text-[60px] font-semibold leading-none tracking-[0.14em] drop-shadow-lg">PAYANA</h1>
           <div className="hairline my-2 w-40 from-gold/80" />
           <p className="max-w-[20rem] text-[13px] uppercase tracking-[0.18em] text-cream/85">{t("tagline")}</p>
@@ -145,15 +148,6 @@ export default function Home() {
         ))}
       </section>
 
-      {demoStep === null && (
-        <section className="mt-4 px-4">
-          <button onClick={() => setDemoStep(0)} className="flex w-full items-center gap-3 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3 text-left">
-            <Sparkles size={20} className="text-teal" />
-            <span className="flex-1 text-sm font-semibold text-cream">{t("menu.demo")}</span>
-            <span className="text-xs text-teal">3 min →</span>
-          </button>
-        </section>
-      )}
 
       {/* Hidden gems */}
       <section className="mt-7">

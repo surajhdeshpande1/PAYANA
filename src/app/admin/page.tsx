@@ -16,6 +16,8 @@ import {
   RefreshCw,
   Route,
   TrendingUp,
+  UserCheck,
+  UserPlus,
   Users,
   XCircle,
 } from "lucide-react";
@@ -40,6 +42,8 @@ interface Stats {
   artisans_pending: number;
   artisans_approved: number;
   events_today: number;
+  users_total?: number;
+  users_today?: number;
   generated_at: string;
 }
 
@@ -131,6 +135,8 @@ export default function AdminPage() {
     { Icon: Users, v: stats?.visitors_rerouted ?? tot.reroute ?? 0, l: "Visitors rerouted" },
     { Icon: HandHeart, v: tot.artisan_contact ?? 0, l: "Artisan contacts" },
     { Icon: Megaphone, v: tot.crowd_report ?? 0, l: "Crowd reports" },
+    { Icon: UserCheck, v: stats?.users_total ?? 0, l: "Registered tourists" },
+    { Icon: UserPlus, v: stats?.users_today ?? 0, l: "Signed up today" },
   ];
 
   const langTotal = Object.values(stats?.langs ?? {}).reduce((a, b) => a + b, 0);

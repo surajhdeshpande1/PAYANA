@@ -13,6 +13,11 @@ export default function DemoTour() {
   const path = usePathname();
   const lastStep = useRef<number | null>(null);
 
+  // Presenter-only entry point: open the app with ?demo=1
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("demo") === "1") setDemoStep(0);
+  }, [setDemoStep]);
+
   useEffect(() => {
     if (demoStep === null) {
       lastStep.current = null;

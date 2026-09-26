@@ -1,0 +1,163 @@
+{
+  "hero": {
+    "src": "/images/hero.jpg",
+    "title": "2017 Badami, Bhutanatha Mandir Hindu temple.jpg",
+    "author": "Nicolas Vollmer from Munich [Allemagne]",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:2017_Badami,_Bhutanatha_Mandir_Hindu_temple.jpg"
+  },
+  "sites/agastya-lake": {
+    "src": "/images/sites/agastya-lake.jpg",
+    "title": "Agastya Lake near Badami Rock Cut Hindu Jain Temples in Karnataka India.jpg",
+    "author": "Photos Worldwide",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Agastya_Lake_near_Badami_Rock_Cut_Hindu_Jain_Temples_in_Karnataka_India.jpg"
+  },
+  "sites/aihole": {
+    "src": "/images/sites/aihole.jpg",
+    "title": "Aihole, Durga Temple (9842647605).jpg",
+    "author": "Arian Zwegers from Brussels, Belgium",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Aihole,_Durga_Temple_(9842647605).jpg"
+  },
+  "sites/badami-caves": {
+    "src": "/images/sites/badami-caves.jpg",
+    "title": "Badami caves temple.jpg",
+    "author": "Prasad V Patil",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Badami_caves_temple.jpg"
+  },
+  "sites/badami-caves-2": {
+    "src": "/images/sites/badami-caves-2.jpg",
+    "title": "6th century 18-arm Nataraja 9x9 Natya postures in Cave 1, with Nandi, Ganesha and a musician, Badami Hindu cave temple Karnataka 1.jpg",
+    "author": "Ms Sarah Welch",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:6th_century_18-arm_Nataraja_9x9_Natya_postures_in_Cave_1,_with_Nandi,_Ganesha_and_a_musician,_Badami_Hindu_cave_temple_Karnataka_1.jpg"
+  },
+  "sites/badami-fort": {
+    "src": "/images/sites/badami-fort.jpg",
+    "title": "Upper Shivalaya - Badami.jpg",
+    "author": "AmlanTheTramp",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Upper_Shivalaya_-_Badami.jpg"
+  },
+  "sites/banashankari": {
+    "src": "/images/sites/banashankari.jpg",
+    "title": "Banashankari 2.jpg",
+    "author": "Jaisuvyas",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Banashankari_2.jpg"
+  },
+  "sites/bhutanatha": {
+    "src": "/images/sites/bhutanatha.jpg",
+    "title": "Bhutanatha Temple glowing under the evening sun.jpg",
+    "author": "Itsmalay",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Bhutanatha_Temple_glowing_under_the_evening_sun.jpg"
+  },
+  "sites/guledgudda": {
+    "src": "/images/sites/guledgudda.jpg",
+    "title": "Pilikula Heritage Village 10.jpg",
+    "author": "Pavanaja",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Pilikula_Heritage_Village_10.jpg"
+  },
+  "sites/ilkal": {
+    "src": "/images/sites/ilkal.jpg",
+    "title": "Indian ladies in Ilkal saree.jpg",
+    "author": "T B Dinesh",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Indian_ladies_in_Ilkal_saree.jpg"
+  },
+  "sites/kudalasangama": {
+    "src": "/images/sites/kudalasangama.jpg",
+    "title": "Kudala Sangama.jpg",
+    "author": "Mankalmadhu at English Wikipedia",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Kudala_Sangama.jpg"
+  },
+  "sites/mahakuta": {
+    "src": "/images/sites/mahakuta.jpg",
+    "title": "Mahakuta 3.jpg",
+    "author": "Sudhir Herle",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mahakuta_3.jpg"
+  },
+  "sites/pattadakal": {
+    "src": "/images/sites/pattadakal.jpg",
+    "title": "Galaganatha temple complex, Pattadakal.jpg",
+    "author": "Basavaraj M",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Galaganatha_temple_complex,_Pattadakal.jpg"
+  },
+  "sites/pattadakal-2": {
+    "src": "/images/sites/pattadakal-2.jpg",
+    "title": "Mallikarjuna and Virupaksha Temples-Pattadakal.jpg",
+    "author": "Shivajidesai29",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Mallikarjuna_and_Virupaksha_Temples-Pattadakal.jpg"
+  },
+  "sites/siddhanakolla": {
+    "src": "/images/sites/siddhanakolla.jpg",
+    "title": "Meguti Megalith 11 20210403.jpg",
+    "author": "Shyamal L.",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Meguti_Megalith_11_20210403.jpg"
+  },
+  "crafts/handloom": {
+    "src": "/images/crafts/handloom.jpg",
+    "title": "India - Varanasi loom - 0987.jpg",
+    "author": "Jorge Royan",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:India_-_Varanasi_loom_-_0987.jpg"
+  },
+  "crafts/homestay": {
+    "src": "/images/crafts/homestay.jpg",
+    "title": "Karnataka House.jpg",
+    "author": "Mohan Babu V",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Karnataka_House.jpg"
+  },
+  "crafts/ilkal-saree": {
+    "src": "/images/crafts/ilkal-saree.jpg",
+    "title": "Ilkal saree.jpg",
+    "author": "T B Dinesh",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Ilkal_saree.jpg"
+  },
+  "crafts/jolada-rotti": {
+    "src": "/images/crafts/jolada-rotti.jpg",
+    "title": "Millet Rotis - Badami Bagalkot district - Karnataka - DSC 4043.jpg",
+    "author": "Basavaraj M",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Millet_Rotis_-_Badami_Bagalkot_district_-_Karnataka_-_DSC_4043.jpg"
+  },
+  "crafts/karadantu": {
+    "src": "/images/crafts/karadantu.jpg",
+    "title": "Dry fruit Burbi of Salem.jpg",
+    "author": "Thamizhpparithi Maari",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Dry_fruit_Burbi_of_Salem.jpg"
+  },
+  "crafts/khana-fabric": {
+    "src": "/images/crafts/khana-fabric.jpg",
+    "title": "Kuppasa (khana) book.jpg",
+    "author": "Khana weaves",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kuppasa_(khana)_book.jpg"
+  },
+  "crafts/lambani": {
+    "src": "/images/crafts/lambani.jpg",
+    "title": "Lambani embroidery.JPG",
+    "author": "Lisrael22",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lambani_embroidery.JPG"
+  },
+  "crafts/stone-carving": {
+    "src": "/images/crafts/stone-carving.jpg",
+    "title": "Stone carver at Sanoor.jpg",
+    "author": "Prabhu.sanoor",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Stone_carver_at_Sanoor.jpg"
+  }
+}

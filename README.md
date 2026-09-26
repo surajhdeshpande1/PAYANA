@@ -5,12 +5,14 @@ Bagalkote's lesser-known sites, and connects them to local artisans.
 
 Built for **AI to Redesign Tourism — Bagalkote 2026** (Dept. of Tourism, Bagalkote × BVVS BEC).
 
+**Live app:** https://payana-chi.vercel.app
+
 | Layer | What it does | Poster themes |
 | --- | --- | --- |
 | **AI Guide** | Photo → monument recognition, voice & text Q&A in ಕನ್ನಡ / हिंदी / English, spoken replies, grounded in a verified knowledge base | Smart Technology (#1, #2, #6, #11) |
 | **Crowd-smart trips** | Transparent crowd model + live visitor reports → itinerary optimiser that shifts peak-hour visits and adds hidden gems; CO₂ score | Sustainable Planning (#3, #4, #5, #14, #17, #20) |
 | **Artisans & stays** | Ilkal sarees, Guledgudda khana, Amingad karadantu, homestays, guides; self-registration + Tourism Dept approval | Inclusive Growth (#8, #9, #12) |
-| **Extras** | Heritage Passport, Accessibility mode, Safety & SOS, offline PWA, live Tourism Dept dashboard, QR share, 3-minute demo tour | #10, #13, Open Innovation |
+| **Extras** | 7-second heritage opening film, tourist accounts with a per-user Heritage Passport, 1–10 live crowd ratings, Accessibility mode, Safety & SOS, offline PWA, live Tourism Dept dashboard, QR share | #10, #13, Open Innovation |
 
 ## Tech (100% free tier)
 
@@ -18,8 +20,8 @@ Built for **AI to Redesign Tourism — Bagalkote 2026** (Dept. of Tourism, Bagal
 - **Google Gemini** (free tier) for vision, audio understanding and multilingual answers, with automatic
   model fallback → **Groq** (free Llama 4 Scout vision + Whisper) → **offline grounded answers**
 - **Supabase** free Postgres for crowd reports, anonymous analytics and artisan registrations (RLS on every table)
-- **Leaflet + OpenStreetMap/CARTO** maps, **OSRM** road routing
-- Browser **Web Speech API** for spoken replies, Gemini TTS fallback when a phone lacks a Kannada voice
+- **Leaflet + OpenStreetMap** maps, **OSRM** road routing, **Photon** geocoding for any place in Karnataka
+- Natural **Gemini TTS** narration (chunked, with speed control), falling back to the phone's own Web Speech voice
 - Service worker for offline use; installable to the home screen
 
 ## Run locally
@@ -45,17 +47,17 @@ camera & mic need HTTPS or localhost).
 Without AI keys the app still works: the guide answers from the saved knowledge base and sample photos use
 verified cached narrations.
 
-## Deploy to Vercel
+## Deployment
 
-1. Push this folder to a new GitHub repo.
-2. vercel.com → **Add New… → Project** → import the repo (framework auto-detected: Next.js).
-3. Add `GEMINI_API_KEY` and `GROQ_API_KEY` under **Environment Variables** → **Deploy**.
-4. Every `git push` redeploys in ~1 minute.
+The Vercel project `payana` is connected to this GitHub repo, so every `git push` builds automatically:
+production from the production branch, and preview URLs for other branches and pull requests.
+`GEMINI_API_KEY` and `GROQ_API_KEY` are set under the project's **Environment Variables**; never commit them.
 
 ## Admin
 
-- Dashboard: `/admin` (live, auto-refreshes every 8 s)
-- Artisan approval PIN: `2509` (change in Supabase: `update private.settings set value='NEWPIN' where key='admin_pin';`)
+- Dashboard: `/admin` (live, refreshes every 5 s; CSV / print report for the District Administrator)
+- Admin tools (approve / remove artisans, tourist list) need the admin PIN. It is stored only in the
+  database (`private.settings`, key `admin_pin`); ask the project owner, and never write it in the repo.
 
 ## Data & honesty notes
 
